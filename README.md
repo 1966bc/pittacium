@@ -31,8 +31,10 @@ write "PBS 1X" on a bottle.
   hold.
 - A line is either **text or a barcode**.
 - **Every label carries the name of the section** in a band at the
-  bottom — Corelab, Spettrometria di Massa, Ematologia — chosen from a
-  list, never typed, so it is spelt the same way on every label.
+  bottom — Corelab, Spettrometria di Massa, Ematologia. It is set once
+  per workstation in `pittacium.ini`, never typed at print time, so it is
+  spelt the same way on every label from that bench. Until it is set, the
+  band reads "Lab".
 - **Shows the label on screen** as it is typed, so a line that does not
   fit is seen before a label is wasted. Linear barcodes are drawn bar by
   bar; Data Matrix and QR as a box of the right size.
