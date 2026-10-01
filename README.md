@@ -1,0 +1,101 @@
+# pittacium
+
+*pittacium, -i* (Latin, from Greek *pittakion*): a label, a tag. Petronius
+describes the wine jars at Trimalchio's dinner with *pittacia* tied to
+their necks, saying what was inside.
+
+**Clear, uniform labels for the laboratory bench: bottles, boxes, tubes.**
+
+A small desktop application to print text labels on the laboratory label
+printer, without opening Inventarium. Python, Tkinter, SQLite, standard
+library only.
+
+## Why
+
+Labels on the bench are still written by hand, and everybody writes them
+their own way. A pittacium label is the fair copy of a handwritten one:
+whatever would have been written by hand, printed legibly and the same
+for everyone. The same kind of container carries the same information,
+in the same order, in the same place. Colleagues asked for it; the printer is already there
+and well liked.
+
+Inventarium already has a custom-label window. pittacium takes that idea
+out on its own, for people who have no reason to open an inventory to
+write "PBS 1X" on a bottle.
+
+## What it does
+
+- Prints text labels in a few **formats**, one per kind of container,
+  each with its size in millimetres.
+- The number of lines on a label is variable, within what the format can
+  hold.
+- **Shows the label on screen** as it is typed, so a line that does not
+  fit is seen before a label is wasted.
+- Keeps **templates** of the labels printed most often, the same for
+  everybody.
+
+## What it does not do
+
+- It is not an inventory: no stock, no lots, no expiry tracking. That is
+  Inventarium.
+- It does not remember what it printed. A label may carry anything a
+  handwritten one would — a tube brought in for research may well have a
+  name on it — and none of it stays behind: not in the database, not in
+  the log. Only the templates someone chooses to save are kept.
+- It is not a sample-identification system: no barcodes tied to a
+  record, no link to the laboratory information system.
+
+## Design decisions
+
+- **Formats are in millimetres**, and know nothing about the printer. A
+  new printer, or a different resolution, does not invalidate them.
+- **The printer is data, not code**: resolution, media, sensor, darkness,
+  speed, queue. Replacing it is a change of configuration.
+- **One class speaks the printer's language.** Today that is ZPL II for a
+  Zebra; no other part of the program writes a printer command. Another
+  make of printer would mean one more class, written the day it arrives.
+- **One layout, two renderers.** `Layout` computes once where every line
+  goes and how tall it is, in printer dots. `Zpl` turns it into commands,
+  `Preview` draws it on a Tk canvas. The positions are written in one
+  place, so the preview cannot drift from the print.
+- **The preview is faithful in positions and sizes, approximate in the
+  shape of the letters**: the Zebra uses its own font (`^A0`), the screen
+  a similar one. The test label printed on the real printer is the final
+  check.
+- **No Pillow, no driver.** The printer draws the text itself at its own
+  resolution: sharp, and a job of a few hundred bytes.
+- **A label that was not printed is never reported as printed.** Three
+  transports: `raw` through the system queue, `tcp` straight to port
+  9100, `file` for testing, which writes the ZPL and says loudly that
+  nothing was printed. Every attempt goes to the log.
+
+The printing approach comes from first_sign, where it already runs on the
+laboratory printer.
+
+## Target environment
+
+| | |
+|---|---|
+| Laboratory | Windows 10 LTSC 2019, Python 3.7.0, SQLite 3.21.0 |
+| Development | Debian 12, Python 3.11, SQLite 3.40 |
+| Printer (2026) | Zebra GX430T, 300 dpi, thermal transfer, gap sensor |
+| Dependencies | none required; `pywin32` only for the `raw` transport on Windows |
+
+## Open questions
+
+- The label stock in use, and whether the roll is changed for different
+  containers.
+- Where the database lives so that templates are shared: a network folder
+  means one writer at a time.
+
+## Conventions
+
+The general rules are in
+[fundamenta/python.md](https://github.com/1966bc/fundamenta); what is
+particular to this project is in [CONVENTIONS.md](CONVENTIONS.md).
+
+## Licence
+
+GNU GPL v3 or later, see `LICENSE`.
+
+*Giuseppe Costanzi — [github.com/1966bc](https://github.com/1966bc)*

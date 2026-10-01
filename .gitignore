@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# The database and the log belong to the machine, not to the repository.
+# The schema ships as SQL.
+*.sl3
+*.db
+*.log
+*.log.*
+
+# Local configuration names printer queues, addresses and network paths of
+# one laboratory: the repository is public. pittacium.ini.example is the
+# template.
+pittacium.ini
+
+# Output of the 'file' transport
+zpl/
+
+# Working notes for Claude Code, kept out of the repository
+CLAUDE.md
