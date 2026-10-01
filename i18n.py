@@ -36,7 +36,24 @@ TRANSLATIONS = {
     "Exit": {"it": "Esci"},
     "Section: {0}": {"it": "Sezione: {0}"},
     "Lines": {"it": "Righe"},
+    "Type": {"it": "Tipo"},
     "Text": {"it": "Testo"},
+    "Interleaved 2 of 5": {"it": "Interleaved 2 of 5"},
+    "Code 128": {"it": "Code 128"},
+
+    # -- barcodes ------------------------------------------------------------
+    "Nothing to encode.": {"it": "Niente da codificare."},
+    "Interleaved 2 of 5 takes digits only.":
+        {"it": "Interleaved 2 of 5 accetta solo cifre."},
+    "Interleaved 2 of 5 needs an even number of digits.":
+        {"it": "Interleaved 2 of 5 vuole un numero pari di cifre."},
+    ("Code 128 takes letters, digits and signs without accents, "
+     "and not '>'."):
+        {"it": "Code 128 accetta lettere, cifre e segni senza accenti, "
+               "e non '>'."},
+    "The barcode is too long for the label.":
+        {"it": "Il codice a barre è troppo lungo per l'etichetta."},
+
     "Height mm": {"it": "Altezza mm"},
     "Align": {"it": "Allineamento"},
     "Left": {"it": "Sinistra"},

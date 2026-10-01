@@ -24,6 +24,14 @@ from ui.window import Window
 #: The alignments, as stored and as read.
 ALIGNS = (("L", "Left"), ("C", "Centre"), ("R", "Right"))
 
+#: What a line can be: text, or a barcode by its symbology code.
+KINDS = (("TEXT", "Text"), ("I2OF5", "Interleaved 2 of 5"),
+         ("CODE128", "Code 128"))
+
+#: The height a line takes when it becomes a barcode: bars a scanner
+#: reads without aiming.
+BARCODE_HEIGHT_MM = 8.0
+
 #: The heights a line can be given, in millimetres.
 HEIGHT_MIN_MM = 2.0
 HEIGHT_MAX_MM = 20.0
@@ -77,8 +85,8 @@ class Main(ttk.Frame, Window):
         self.frm_lines = ttk.LabelFrame(frm_body, text=_("Lines"),
                                         padding=8)
         self.frm_lines.grid(row=1, column=0, sticky=tk.NSEW, pady=(8, 0))
-        self.frm_lines.columnconfigure(0, weight=1)
-        headings = (_("Text"), _("Height mm"), _("Align"))
+        self.frm_lines.columnconfigure(1, weight=1)
+        headings = (_("Type"), _("Text"), _("Height mm"), _("Align"))
         for column, heading in enumerate(headings):
             ttk.Label(self.frm_lines, text=heading,
                       style="App.TLabel").grid(row=0, column=column,
@@ -107,6 +115,11 @@ class Main(ttk.Frame, Window):
                                       to=printer.COPIES_MAX, increment=1,
                                       width=4)
         self.spn_copies.pack(side=tk.RIGHT)
+
+        # Close goes last, under the copies, the furthest from Print.
+        frm_close = self.engine.tools.get_button_column(
+            frm_actions, ((_("Close"), self.parent.on_exit),))
+        frm_close.pack(fill=tk.X, pady=(8, 0))
 
         # The status bar has a fixed height and asks for no width: a long
         # message is cut at the edge rather than widening the whole
@@ -162,26 +175,32 @@ class Main(ttk.Frame, Window):
     # --- the lines ----------------------------------------------------------
 
     def add_row(self, height_mm):
-        """A new line at the bottom: text, height, alignment."""
+        """A new line at the bottom: type, text, height, alignment."""
         line = len(self.rows) + 1
+        kind = tk.StringVar(value=_(KINDS[0][1]))
         text = tk.StringVar()
         height = tk.StringVar(value=str(height_mm))
         align = tk.StringVar(value=_(ALIGNS[1][1]))
 
+        cb_kind = ttk.Combobox(self.frm_lines, textvariable=kind,
+                               state="readonly", width=16,
+                               values=[_(word) for code, word in KINDS])
         ent_text = ttk.Entry(self.frm_lines, textvariable=text,
-                             width=self.engine.tools.FIELD_NAME)
+                             width=self.engine.tools.FIELD_CODE + 8)
         spn_height = ttk.Spinbox(self.frm_lines, textvariable=height,
                                  from_=HEIGHT_MIN_MM, to=HEIGHT_MAX_MM,
                                  increment=HEIGHT_STEP_MM, width=6)
         cb_align = ttk.Combobox(self.frm_lines, textvariable=align,
                                 state="readonly", width=8,
                                 values=[_(word) for code, word in ALIGNS])
-        ent_text.grid(row=line, column=0, sticky=tk.EW, padx=2, pady=2)
-        spn_height.grid(row=line, column=1, padx=2, pady=2)
-        cb_align.grid(row=line, column=2, padx=2, pady=2)
+        cb_kind.grid(row=line, column=0, padx=2, pady=2)
+        ent_text.grid(row=line, column=1, sticky=tk.EW, padx=2, pady=2)
+        spn_height.grid(row=line, column=2, padx=2, pady=2)
+        cb_align.grid(row=line, column=3, padx=2, pady=2)
 
         for variable in (text, height, align):
             variable.trace_add("write", self.on_change)
+        kind.trace_add("write", lambda *args: self.on_kind(line - 1))
 
         # The keys of a text editor: Return goes to the next line, making
         # it when there is none; the arrows move between lines; BackSpace
@@ -194,9 +213,26 @@ class Main(ttk.Frame, Window):
         ent_text.bind("<Up>", lambda evt: self.on_move(index - 1))
         ent_text.bind("<BackSpace>", lambda evt: self.on_backspace(index))
 
-        self.rows.append({"text": text, "height": height, "align": align,
-                          "widgets": (ent_text, spn_height, cb_align),
+        self.rows.append({"kind": kind, "text": text, "height": height,
+                          "align": align,
+                          "widgets": (cb_kind, ent_text, spn_height,
+                                      cb_align),
                           "ent_text": ent_text})
+        self.set_preview()
+
+    def on_kind(self, index):
+        """A line changed type: a barcode wants taller bars than text.
+
+        The height changes only when it is still the default of the other
+        type, so a height somebody chose is not thrown away.
+        """
+        row = self.rows[index]
+        code = self.get_kind(row["kind"].get())
+        if code == "TEXT" and row["height"].get() == str(BARCODE_HEIGHT_MM):
+            row["height"].set(str(NEXT_HEIGHT_MM))
+        elif code != "TEXT" and row["height"].get() in (
+                str(NEXT_HEIGHT_MM), str(FIRST_HEIGHT_MM)):
+            row["height"].set(str(BARCODE_HEIGHT_MM))
         self.set_preview()
 
     def on_next(self, index):
@@ -274,16 +310,37 @@ class Main(ttk.Frame, Window):
                 code = stored
         return code
 
+    def get_kind(self, word):
+        """The stored code of a line type, from the word on screen."""
+        code = "TEXT"
+        for stored, english in KINDS:
+            if _(english) == word:
+                code = stored
+        return code
+
     def get_elements(self):
         """The lines as Layout reads them."""
         elements = []
         for row in self.rows:
             height = float(row["height"].get().replace(",", "."))
-            elements.append({"kind": "text",
-                             "content": row["text"].get(),
-                             "height_mm": height,
-                             "align": self.get_align(row["align"].get())})
+            element = {"kind": "text", "content": row["text"].get(),
+                       "height_mm": height,
+                       "align": self.get_align(row["align"].get())}
+            code = self.get_kind(row["kind"].get())
+            if code != "TEXT":
+                element["kind"] = "barcode"
+                element["symbology"] = code
+                element["human_readable"] = True
+            elements.append(element)
         return elements
+
+    def get_problem(self):
+        """The first line that cannot be printed as it is, translated."""
+        problems = self.layout.get_problems(self.get_elements())
+        problem = ""
+        if problems:
+            problem = _(problems[0])
+        return problem
 
     def set_preview(self):
         """Draw the label again, unless a height is being typed.
@@ -303,7 +360,10 @@ class Main(ttk.Frame, Window):
             items = self.layout.get_items(elements,
                                           self.engine.get_section())
             self.preview.set_items(items, fitting)
-            if fitting:
+            problem = self.get_problem()
+            if problem:
+                self.fit.set(problem)
+            elif fitting:
                 self.fit.set(_("The lines fit."))
             else:
                 self.fit.set(_("Too tall by {0:.1f} mm").format(
@@ -323,6 +383,8 @@ class Main(ttk.Frame, Window):
                                                           HEIGHT_MAX_MM)
         elif not self.layout.get_lines(self.get_elements()):
             refusal = _("Nothing to print: every line is empty.")
+        elif self.get_problem():
+            refusal = self.get_problem()
         elif not self.layout.is_fitting(self.get_elements()):
             refusal = _("Too tall by {0:.1f} mm").format(
                 self.layout.get_overflow_mm(self.get_elements()))

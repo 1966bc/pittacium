@@ -75,6 +75,29 @@ class Zpl:
             item["x"], item["y"], item["height"], item["width"],
             item["align"], self.get_field(item["text"]))
 
+    def get_barcode(self, item):
+        """A barcode, drawn by the printer exactly as Layout measured it.
+
+        ^BY gives the narrow bar in dots and, for 2 of 5, the ratio of the
+        wide one. Code 128 is told its subset with an invocation code at
+        the start of the data - >: for B, >; for C - so the printer does
+        not choose another one than the preview drew. No interpretation
+        line from the printer: Layout places the human-readable text.
+        """
+        head = "^FO{0},{1}^BY{2},{3:.1f},{4}".format(
+            item["x"], item["y"], item["module"], item.get("ratio", 3),
+            item["height"])
+        if item["symbology"] == "I2OF5":
+            command = "^B2N,{0},N,N,N".format(item["height"])
+            data = item["data"]
+        elif item["symbology"] == "CODE128":
+            command = "^BCN,{0},N,N,N,N".format(item["height"])
+            data = {"B": ">:", "C": ">;"}[item["subset"]] + item["data"]
+        else:
+            raise ValueError("no ZPL for symbology {0}".format(
+                item["symbology"]))
+        return "{0}{1}{2}".format(head, command, self.get_field(data))
+
     def get_rule(self, item):
         """A filled box: ^GB with the thickness equal to its height."""
         return "^FO{0},{1}^GB{2},{3},{3}^FS".format(
@@ -95,8 +118,13 @@ class Zpl:
         for item in items:
             if item["kind"] == "rule":
                 lines.append(self.get_rule(item))
-            else:
+            elif item["kind"] == "barcode":
+                lines.append(self.get_barcode(item))
+            elif item["kind"] == "text":
                 lines.append(self.get_text(item))
+            else:
+                raise ValueError("cannot print an item of kind {0}".format(
+                    item["kind"]))
         lines.append("^PQ{0}".format(copies))
         lines.append("^XZ")
 

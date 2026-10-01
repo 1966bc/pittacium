@@ -81,8 +81,41 @@ class Preview(tk.Canvas):
         for item in items:
             if item["kind"] == "rule":
                 self.set_rule(item)
+            elif item["kind"] == "barcode":
+                self.set_barcode(item)
+            elif item["kind"] == "invalid":
+                self.set_invalid(item)
             else:
                 self.set_text(item)
+
+    def set_barcode(self, item):
+        """The bars, one rectangle per run of dark modules.
+
+        The same modules the printer is told to draw, at the same narrow
+        bar, scaled: what is seen here is the symbol, not a picture of one.
+        """
+        x = self.PAD_PX + item["x"] * self.scale
+        y = self.PAD_PX + self.get_px(item["y"])
+        bottom = y + self.get_px(item["height"])
+        module = item["module"] * self.scale
+        start = None
+        modules = item["modules"] + "0"
+        for index in range(len(modules)):
+            if modules[index] == "1" and start is None:
+                start = index
+            elif modules[index] == "0" and start is not None:
+                self.create_rectangle(x + start * module, y,
+                                      x + index * module, bottom,
+                                      fill=self.INK, outline="")
+                start = None
+
+    def set_invalid(self, item):
+        """A barcode that cannot be printed: its place, outlined in red."""
+        x = self.PAD_PX + self.get_px(item["x"])
+        y = self.PAD_PX + self.get_px(item["y"])
+        self.create_rectangle(x, y, x + self.get_px(item["width"]),
+                              y + self.get_px(item["height"]),
+                              outline=self.WRONG, width=2, dash=(4, 2))
 
     def set_rule(self, item):
         x = self.PAD_PX + self.get_px(item["x"])

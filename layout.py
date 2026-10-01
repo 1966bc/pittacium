@@ -16,15 +16,24 @@ the one that drifts.
     layout = Layout(50, 30, 1.5, 4.0, 300)
     items = layout.get_items(elements, "Corelab")
 
-Every line is a box as wide as the label inside its margins, and the text
-is aligned inside the box by whoever draws it: the printer knows the width
-of its own letters, this class does not. What this class does know is the
-height, so it says whether the lines fit, and by how much they do not.
+A line of text is a box as wide as the label inside its margins, and the
+text is aligned inside the box by whoever draws it: the printer knows the
+width of its own letters, this class does not.
+
+A barcode is different: its width is known exactly, module by module, so
+it is placed here, with the widest bars that fit and its quiet zone, and
+its human-readable line under it.
 
 The lines are stacked from the top with a gap between them and the stack
 is centred in the space above the section band. The band is the last
 strip of the label: a thin rule, and the section's name centred under it.
 """
+
+from code128 import Code128
+from i2of5 import Interleaved2of5
+
+#: The barcodes a line can be, by the code stored in symbologies.
+SYMBOLOGIES = {"I2OF5": Interleaved2of5(), "CODE128": Code128()}
 
 
 class Layout:
@@ -38,6 +47,14 @@ class Layout:
 
     #: Thickness of the rule above the band, in millimetres.
     RULE_MM = 0.25
+
+    #: The human-readable line under a barcode, and the space above it.
+    HUMAN_MM = 2.5
+    HUMAN_GAP_MM = 0.5
+
+    #: The narrowest bar a scanner reads reliably, and the widest wanted.
+    MODULE_MIN_MM = 0.17
+    MODULE_MAX_MM = 0.5
 
     def __init__(self, width_mm, height_mm, margin_mm, section_band_mm, dpi):
         self.width_mm = float(width_mm)
@@ -64,19 +81,6 @@ class Layout:
         return (height - self.get_dots(self.margin_mm)
                 - self.get_dots(self.section_band_mm))
 
-    def get_lines(self, elements):
-        """The elements that print, with their heights in dots.
-
-        An empty line is not printed: on a label written by hand nobody
-        leaves a blank line, and a template line left empty is one that was
-        not needed this time.
-        """
-        lines = []
-        for element in elements:
-            if element["content"].strip() != "":
-                lines.append((element, self.get_dots(element["height_mm"])))
-        return lines
-
     def get_body(self):
         """Dots available to the lines, between the top margin and the band."""
         return (self.get_band_top() - self.get_dots(self.margin_mm)
@@ -91,15 +95,75 @@ class Layout:
         step = self.get_dots(height_mm) + self.get_dots(self.GAP_MM)
         return (self.get_body() + self.get_dots(self.GAP_MM)) // step
 
+    # --- barcodes -----------------------------------------------------------
+
+    def get_module(self, element):
+        """The widest bar, in dots, at which the symbol fits; 0 if none.
+
+        The symbol and its quiet zone on both sides have to fit across the
+        label. Wider bars scan more easily, so the widest that fits wins.
+        """
+        symbology = SYMBOLOGIES[element["symbology"]]
+        count = len(symbology.get_modules(element["content"]))
+        needed = count + 2 * symbology.QUIET
+        smallest = max(2, self.get_dots(self.MODULE_MIN_MM))
+        module = 0
+        for dots in range(smallest, self.get_dots(self.MODULE_MAX_MM) + 1):
+            if needed * dots <= self.get_size()[0]:
+                module = dots
+        return module
+
+    def get_problem(self, element):
+        """Why a line cannot be printed as it is, or an empty string."""
+        problem = ""
+        content = element["content"].strip()
+        if element["kind"] == "barcode" and content != "":
+            symbology = SYMBOLOGIES[element["symbology"]]
+            problem = symbology.get_problem(content)
+            if problem == "" and self.get_module(element) == 0:
+                problem = "The barcode is too long for the label."
+        return problem
+
+    def get_problems(self, elements):
+        """The problems of every line that has one, from the top."""
+        problems = []
+        for element in elements:
+            problem = self.get_problem(element)
+            if problem:
+                problems.append(problem)
+        return problems
+
+    # --- the lines ----------------------------------------------------------
+
+    def get_height(self, element):
+        """The height of a line, in dots: a barcode carries its text."""
+        height = self.get_dots(element["height_mm"])
+        if element["kind"] == "barcode" and element["human_readable"]:
+            height += (self.get_dots(self.HUMAN_GAP_MM)
+                       + self.get_dots(self.HUMAN_MM))
+        return height
+
+    def get_lines(self, elements):
+        """The elements that print, with their heights in dots.
+
+        An empty line is not printed: on a label written by hand nobody
+        leaves a blank line, and a template line left empty is one that was
+        not needed this time.
+        """
+        lines = []
+        for element in elements:
+            if element["content"].strip() != "":
+                lines.append((element, self.get_height(element)))
+        return lines
+
     def get_free(self, lines):
         """Dots left over above the band; negative when the lines overflow."""
-        body = self.get_body()
         used = 0
         for element, height in lines:
             used += height
         if len(lines) > 1:
             used += self.get_dots(self.GAP_MM) * (len(lines) - 1)
-        return body - used
+        return self.get_body() - used
 
     def get_overflow_mm(self, elements):
         """How much too tall the lines are, in millimetres; 0 if they fit."""
@@ -113,13 +177,61 @@ class Layout:
         """True when every line fits above the section band."""
         return self.get_free(self.get_lines(elements)) >= 0
 
+    # --- the items ----------------------------------------------------------
+
+    def get_text_item(self, x, y, width, height, text, align):
+        return {"kind": "text", "x": x, "y": y, "width": width,
+                "height": height, "text": text, "align": align}
+
+    def get_barcode_items(self, element, y, height):
+        """The bars, placed by their alignment, and the text under them.
+
+        A barcode with a problem is an empty box of the same place and
+        height, which the preview shows in red and the printer never gets.
+        """
+        width = self.get_size()[0]
+        margin = self.get_dots(self.margin_mm)
+        bars = self.get_dots(element["height_mm"])
+        data = element["content"].strip()
+        items = []
+
+        if self.get_problem(element):
+            items.append({"kind": "invalid", "x": margin, "y": y,
+                          "width": width - 2 * margin, "height": height})
+        else:
+            symbology = SYMBOLOGIES[element["symbology"]]
+            modules = symbology.get_modules(data)
+            module = self.get_module(element)
+            symbol = len(modules) * module
+            x = margin
+            if element["align"] == "C":
+                x = (width - symbol) // 2
+            elif element["align"] == "R":
+                x = width - margin - symbol
+            barcode = {"kind": "barcode", "x": x, "y": y, "width": symbol,
+                       "height": bars, "symbology": element["symbology"],
+                       "data": data, "module": module, "modules": modules}
+            # What the printer must be told to draw the very same symbol:
+            # the wide-to-narrow ratio, or the Code 128 subset.
+            if element["symbology"] == "I2OF5":
+                barcode["ratio"] = symbology.RATIO
+            elif element["symbology"] == "CODE128":
+                barcode["subset"] = symbology.get_subset(data)
+            items.append(barcode)
+            if element["human_readable"]:
+                items.append(self.get_text_item(
+                    x, y + bars + self.get_dots(self.HUMAN_GAP_MM), symbol,
+                    self.get_dots(self.HUMAN_MM), data, "C"))
+        return items
+
     def get_items(self, elements, section):
         """Everything to draw, in dots, from the top.
 
-        Each item is a dictionary: kind ('text' or 'rule'), x, y, width,
-        height, and for text the text and its alignment (L, C, R) inside
-        the box. Lines that do not fit are placed anyway, running into the
-        band: the preview shows the overflow, it does not hide it.
+        Each item is a dictionary with its kind - 'text', 'rule',
+        'barcode', or 'invalid' for a barcode that cannot be printed - and
+        x, y, width, height. Lines that do not fit are placed anyway,
+        running into the band: the preview shows the overflow, it does
+        not hide it.
         """
         width = self.get_size()[0]
         margin = self.get_dots(self.margin_mm)
@@ -130,10 +242,12 @@ class Layout:
         y = margin + max(0, self.get_free(lines)) // 2
         items = []
         for element, height in lines:
-            items.append({"kind": "text", "x": margin, "y": y,
-                          "width": box, "height": height,
-                          "text": element["content"].strip(),
-                          "align": element["align"]})
+            if element["kind"] == "barcode":
+                items.extend(self.get_barcode_items(element, y, height))
+            else:
+                items.append(self.get_text_item(
+                    margin, y, box, height, element["content"].strip(),
+                    element["align"]))
             y += height + gap
 
         band_top = self.get_band_top()
@@ -142,8 +256,7 @@ class Layout:
         text_height = int(band * self.SECTION_TEXT_RATIO)
         items.append({"kind": "rule", "x": margin, "y": band_top,
                       "width": box, "height": rule})
-        items.append({"kind": "text", "x": margin,
-                      "y": band_top + rule + (band - rule - text_height) // 2,
-                      "width": box, "height": text_height,
-                      "text": section, "align": "C"})
+        items.append(self.get_text_item(
+            margin, band_top + rule + (band - rule - text_height) // 2, box,
+            text_height, section, "C"))
         return items
