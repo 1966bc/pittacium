@@ -1,8 +1,8 @@
--- -----------------------------------------------------------------------------
+-- ----------------------------------------------------------------------------
 -- project:  pittacium
 -- authors:  Giuseppe Costanzi (1966bc)
 -- licence:  GPL-3.0-or-later, see LICENSE
--- -----------------------------------------------------------------------------
+-- ----------------------------------------------------------------------------
 -- Schema version 1.
 --
 -- Written for SQLite 3.21, the laboratory's: no UPSERT, no window
@@ -10,7 +10,7 @@
 -- belong to the printer and are computed by Layout, never stored.
 --
 -- What is printed is not kept: there is no table of printed labels.
--- -----------------------------------------------------------------------------
+-- ----------------------------------------------------------------------------
 
 PRAGMA foreign_keys = ON;
 

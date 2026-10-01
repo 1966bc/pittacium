@@ -100,6 +100,17 @@ laboratory printer.
 | Label stock | 50 x 30 mm, the roll first_sign and Inventarium print on |
 | Dependencies | none required; `pywin32` only for the `raw` transport on Windows |
 
+## Running
+
+```
+python3 pittacium.py            start it
+python3 pittacium.py --trace    and print on the terminal what it does
+python3 -m unittest discover -s tests -v
+```
+
+The first start makes `pittacium.ini` from `pittacium.ini.example` and the
+database from `sql/`. On Debian, tkinter needs the `python3-tk` package.
+
 ## Open questions
 
 - Where the database lives so that templates are shared: a network folder

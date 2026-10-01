@@ -1,0 +1,24 @@
+; pittacium - settings of this workstation.
+;
+; The program copies this file to pittacium.ini the first time it starts,
+; and from then on reads that one. pittacium.ini is not in the repository:
+; it is where a laboratory writes its own printer and section.
+;
+; Lines starting with ; are comments.
+
+[interface]
+; en, it
+language = it
+; ttk theme: clam looks the same on Windows and on Linux
+theme = clam
+
+[label]
+; printed in the band at the bottom of every label, e.g.
+; Corelab, Spettrometria di Massa, Ematologia, Coagulazione.
+; Empty means Lab.
+section = Lab
+
+[database]
+; a bare name is beside the program; an absolute path can point to a
+; shared folder, so that a whole laboratory uses the same templates
+file = pittacium.sl3
