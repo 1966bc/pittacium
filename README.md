@@ -54,8 +54,7 @@ write "PBS 1X" on a bottle.
 
 ## What it does not do
 
-- It is not an inventory: no stock, no lots, no expiry tracking. That is
-  Inventarium.
+- It is not an inventory: no stock, no lots, no expiry tracking. 
 - It does not remember what it printed. A label may carry anything a
   handwritten one would — a tube brought in for research may well have a
   name on it — and none of it stays behind: not in the database, not in
