@@ -117,6 +117,16 @@ python3 -m unittest discover -s tests -v
 The first start makes `pittacium.ini` from `pittacium.ini.example` and the
 database from `sql/`. On Debian, tkinter needs the `python3-tk` package.
 
+On Windows, a build in one folder, with pywin32 installed for the raw
+transport:
+
+```
+py -3.7 -m PyInstaller --clean --noconfirm pittacium.spec
+```
+
+`pittacium.spec` says why each choice is made. Copy `dist/pittacium`
+somewhere else to install it: the next build rewrites `dist/`.
+
 ## Conventions
 
 The general rules are in

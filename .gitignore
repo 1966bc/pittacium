@@ -17,5 +17,12 @@ pittacium.ini
 # Output of the 'file' transport
 zpl/
 
+# PyInstaller: what it builds, and the specs it would generate. Ours is the
+# build recipe and says why each choice was made, so it is kept.
+build/
+dist/
+*.spec
+!pittacium.spec
+
 # Working notes for Claude Code, kept out of the repository
 CLAUDE.md

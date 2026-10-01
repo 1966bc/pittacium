@@ -20,9 +20,12 @@ from log import Log
 from ui.app import App
 from version import APP_NAME
 
-#: The folder of this file: the log lives here, beside the program, so it
-#: can be started from any folder.
+#: The folder of the program: the log lives here, beside it, so it can be
+#: started from any folder. Built with PyInstaller, the program is the
+#: executable.
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, "frozen", False):
+    PROJECT_DIR = os.path.dirname(sys.executable)
 
 #: The options the program knows. Anything else is refused, not ignored.
 OPTIONS = ("--trace",)

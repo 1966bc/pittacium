@@ -18,6 +18,7 @@ own database so that a colleague can start the program and print.
 import glob
 import os
 import shutil
+import sys
 
 import i18n
 from config import Config
@@ -73,12 +74,31 @@ class Engine:
     # --- the files ----------------------------------------------------------
 
     def get_file(self, name):
-        """The full path of a file beside the program.
+        """A file the program writes, beside the program.
 
-        So the settings, the database and the log are found wherever the
-        program is started from.
+        The settings, the database, the log and the zpl folder, found
+        wherever the program is started from. Built with PyInstaller, the
+        program is the executable, and they go beside it, where whoever
+        installed it can see them.
         """
-        return os.path.join(os.path.dirname(os.path.abspath(__file__)), name)
+        root = os.path.dirname(os.path.abspath(__file__))
+        if getattr(sys, "frozen", False):
+            root = os.path.dirname(sys.executable)
+        return os.path.join(root, name)
+
+    def get_resource(self, name):
+        """A file that travels with the program and is only read.
+
+        The SQL, the icon, LICENSE, the example settings. From source they
+        are beside the program like the others; built, they are where
+        PyInstaller unpacked them, sys._MEIPASS - beside the executable
+        with PyInstaller 5, in _internal with 6. Asking for it by name
+        works with both.
+        """
+        root = os.path.dirname(os.path.abspath(__file__))
+        if getattr(sys, "frozen", False):
+            root = sys._MEIPASS
+        return os.path.join(root, name)
 
     def get_settings(self):
         """The settings file, copied from the example when there is none.
@@ -89,7 +109,7 @@ class Engine:
         path = self.get_file(SETTINGS)
 
         if not os.path.exists(path):
-            shutil.copyfile(self.get_file(SETTINGS_EXAMPLE), path)
+            shutil.copyfile(self.get_resource(SETTINGS_EXAMPLE), path)
             self.log.info("settings created from {0}".format(
                 SETTINGS_EXAMPLE))
 
@@ -114,7 +134,7 @@ class Engine:
         """The SQL that makes a new database: structure, then data."""
         scripts = []
         for folder in ("ddl", "dml"):
-            pattern = os.path.join(self.get_file("sql"), folder, "*.sql")
+            pattern = os.path.join(self.get_resource("sql"), folder, "*.sql")
             scripts.extend(sorted(glob.glob(pattern)))
         return scripts
 
@@ -133,12 +153,12 @@ class Engine:
 
     def get_icons(self):
         """Every size of the application icon: one base64 PNG per line."""
-        with open(self.get_file("app"), "r") as f:
+        with open(self.get_resource("app"), "r") as f:
             return f.read().split()
 
     def get_license(self):
         """The licence, as the About window shows it."""
-        with open(self.get_file("LICENSE"), "r", encoding="utf-8") as f:
+        with open(self.get_resource("LICENSE"), "r", encoding="utf-8") as f:
             return f.read()
 
     # --- the label ----------------------------------------------------------
