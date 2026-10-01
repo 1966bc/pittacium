@@ -59,6 +59,13 @@ class TestLayout(unittest.TestCase):
         self.assertFalse(self.layout.is_fitting(lines))
         self.assertGreater(self.layout.get_overflow_mm(lines), 0.0)
 
+    def test_max_lines_of_a_height_do_fit_and_one_more_does_not(self):
+        limit = self.layout.get_max_lines(2.0)
+        lines = [get_line(str(n), 2.0) for n in range(limit)]
+        self.assertTrue(self.layout.is_fitting(lines))
+        lines.append(get_line("one more", 2.0))
+        self.assertFalse(self.layout.is_fitting(lines))
+
     def test_every_line_box_is_inside_the_margins(self):
         items = self.layout.get_items([get_line("PBS 1X", align="R")],
                                       "Lab")

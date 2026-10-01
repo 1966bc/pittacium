@@ -120,8 +120,17 @@ class Main(ttk.Frame, Window):
         self.set_preview()
 
     def on_add(self, evt=None):
-        self.add_row(NEXT_HEIGHT_MM)
-        self.rows[-1]["ent_text"].focus_set()
+        """A new line, up to as many as the label can hold at all.
+
+        The limit is the lines of the smallest height that fit: past it, no
+        choice of heights could make the label fit.
+        """
+        limit = self.layout.get_max_lines(HEIGHT_MIN_MM)
+        if len(self.rows) < limit:
+            self.add_row(NEXT_HEIGHT_MM)
+            self.rows[-1]["ent_text"].focus_set()
+        else:
+            self.fit.set(_("At most {0} lines on this label.").format(limit))
 
     def on_remove(self, evt=None):
         """Take away the last line; the first one always stays."""

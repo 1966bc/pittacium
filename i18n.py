@@ -45,6 +45,8 @@ TRANSLATIONS = {
     "Add line": {"it": "Aggiungi riga"},
     "Remove line": {"it": "Togli riga"},
     "The lines fit.": {"it": "Le righe entrano."},
+    "At most {0} lines on this label.":
+        {"it": "Al massimo {0} righe su questa etichetta."},
     "Too tall by {0:.1f} mm": {"it": "Troppo alta di {0:.1f} mm"},
     "Height from {0} to {1} mm": {"it": "Altezza da {0} a {1} mm"},
 }

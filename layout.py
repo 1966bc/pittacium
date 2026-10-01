@@ -77,10 +77,23 @@ class Layout:
                 lines.append((element, self.get_dots(element["height_mm"])))
         return lines
 
+    def get_body(self):
+        """Dots available to the lines, between the top margin and the band."""
+        return (self.get_band_top() - self.get_dots(self.margin_mm)
+                - self.get_dots(self.GAP_MM))
+
+    def get_max_lines(self, height_mm):
+        """How many lines of this height fit above the band.
+
+        n lines take n heights and n - 1 gaps, so n is the largest whole
+        number with n * (height + gap) <= body + gap.
+        """
+        step = self.get_dots(height_mm) + self.get_dots(self.GAP_MM)
+        return (self.get_body() + self.get_dots(self.GAP_MM)) // step
+
     def get_free(self, lines):
         """Dots left over above the band; negative when the lines overflow."""
-        body = (self.get_band_top() - self.get_dots(self.margin_mm)
-                - self.get_dots(self.GAP_MM))
+        body = self.get_body()
         used = 0
         for element, height in lines:
             used += height
