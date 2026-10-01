@@ -23,6 +23,7 @@ import i18n
 from config import Config
 from dbms import DBMS
 from events import Events
+from layout import Layout
 from tools import Tools
 from version import APP_NAME
 from version import SCHEMA_VERSION
@@ -135,6 +136,24 @@ class Engine:
             return f.read()
 
     # --- the label ----------------------------------------------------------
+
+    def get_dpi(self):
+        """The printer's resolution, from the settings of this workstation."""
+        return self.config.get_int("printer", "dpi")
+
+    def get_formats(self):
+        """The label formats in use, by description."""
+        sql = """SELECT *
+                   FROM formats
+                  WHERE enable = 1
+                  ORDER BY description"""
+        return self.db.read_all(sql)
+
+    def get_layout(self, label_format):
+        """The Layout of a format row at this printer's resolution."""
+        return Layout(label_format["width_mm"], label_format["height_mm"],
+                      label_format["margin_mm"],
+                      label_format["section_band_mm"], self.get_dpi())
 
     def get_section(self):
         """The name printed at the bottom of every label.

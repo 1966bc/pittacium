@@ -18,6 +18,10 @@ theme = clam
 ; Empty means Lab.
 section = Lab
 
+[printer]
+; dots per inch: 300 on a Zebra GX430T, 203 on a GX420T
+dpi = 300
+
 [database]
 ; a bare name is beside the program; an absolute path can point to a
 ; shared folder, so that a whole laboratory uses the same templates

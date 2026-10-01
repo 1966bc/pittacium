@@ -35,6 +35,18 @@ TRANSLATIONS = {
     "File": {"it": "File"},
     "Exit": {"it": "Esci"},
     "Section: {0}": {"it": "Sezione: {0}"},
+    "Lines": {"it": "Righe"},
+    "Text": {"it": "Testo"},
+    "Height mm": {"it": "Altezza mm"},
+    "Align": {"it": "Allineamento"},
+    "Left": {"it": "Sinistra"},
+    "Centre": {"it": "Centro"},
+    "Right": {"it": "Destra"},
+    "Add line": {"it": "Aggiungi riga"},
+    "Remove line": {"it": "Togli riga"},
+    "The lines fit.": {"it": "Le righe entrano."},
+    "Too tall by {0:.1f} mm": {"it": "Troppo alta di {0:.1f} mm"},
+    "Height from {0} to {1} mm": {"it": "Altezza da {0} a {1} mm"},
 }
 
 
