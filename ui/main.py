@@ -14,9 +14,12 @@ and Remove line, and the preview says when they no longer fit.
 import tkinter as tk
 from tkinter import font
 from tkinter import messagebox
+from tkinter import simpledialog
 from tkinter import ttk
 
 from i18n import _
+from ui.about import UI as AboutUI
+from ui.licence import UI as LicenceUI
 from ui.preview import Preview
 from ui.settings import UI as SettingsUI
 from ui.window import Window
@@ -72,7 +75,20 @@ class Main(ttk.Frame, Window):
         menu_file.add_command(label=_("Exit"), underline=0,
                               command=self.parent.on_exit)
         menubar.add_cascade(label=_("File"), menu=menu_file, underline=0)
+
+        menu_help = tk.Menu(menubar, tearoff=0)
+        menu_help.add_command(label=_("About"), underline=0,
+                              command=self.on_about)
+        menu_help.add_command(label=_("Licence"), underline=0,
+                              command=self.on_licence)
+        menubar.add_cascade(label=_("Help"), menu=menu_help, underline=0)
         self.parent.config(menu=menubar)
+
+    def on_about(self, evt=None):
+        self.engine.windows.show("about", lambda: AboutUI(self.parent))
+
+    def on_licence(self, evt=None):
+        self.engine.windows.show("licence", lambda: LicenceUI(self.parent))
 
     def init_ui(self):
         # The label on top, as on a sheet: it is looked at before it is
@@ -84,9 +100,25 @@ class Main(ttk.Frame, Window):
         self.preview = Preview(frm_body, self.layout)
         self.preview.grid(row=0, column=0)
 
+        # The template chosen fills the lines: a daily label is a choice
+        # here and then Print.
+        frm_template = ttk.Frame(frm_body, style="App.TFrame")
+        frm_template.grid(row=1, column=0, sticky=tk.EW, pady=(8, 0))
+        ttk.Label(frm_template, text=_("Template"),
+                  style="App.TLabel").pack(side=tk.LEFT)
+        self.template = tk.StringVar()
+        self.cb_template = ttk.Combobox(frm_template,
+                                        textvariable=self.template,
+                                        state="readonly")
+        self.cb_template.pack(side=tk.LEFT, fill=tk.X, expand=1,
+                              padx=(8, 0))
+        self.cb_template.bind("<<ComboboxSelected>>", self.on_template)
+        #: Position in the combo box -> template_id.
+        self.template_ids = {}
+
         self.frm_lines = ttk.LabelFrame(frm_body, text=_("Lines"),
                                         padding=8)
-        self.frm_lines.grid(row=1, column=0, sticky=tk.NSEW, pady=(8, 0))
+        self.frm_lines.grid(row=2, column=0, sticky=tk.NSEW, pady=(8, 0))
         self.frm_lines.columnconfigure(1, weight=1)
         headings = (_("Type"), _("Text"), _("Height mm"), _("Align"))
         for column, heading in enumerate(headings):
@@ -95,12 +127,14 @@ class Main(ttk.Frame, Window):
                                                sticky=tk.W, padx=2)
 
         frm_actions = ttk.Frame(frm_body, style="App.TFrame")
-        frm_actions.grid(row=0, column=1, rowspan=2, sticky=tk.N,
+        frm_actions.grid(row=0, column=1, rowspan=3, sticky=tk.N,
                          padx=(8, 0))
 
         buttons = ((_("Print"), self.on_print),
                    (_("Add line"), self.on_add),
-                   (_("Remove line"), self.on_remove))
+                   (_("Remove line"), self.on_remove),
+                   (_("Save template"), self.on_save_template),
+                   (_("Delete template"), self.on_delete_template))
         frm_buttons = self.engine.tools.get_button_column(frm_actions,
                                                           buttons)
         frm_buttons.pack(fill=tk.X)
@@ -147,6 +181,8 @@ class Main(ttk.Frame, Window):
 
     def on_open(self):
         self.engine.events.subscribe("settings", self.on_settings)
+        self.engine.events.subscribe("templates", self.on_templates)
+        self.set_templates()
         self.set_status()
         self.add_row(FIRST_HEIGHT_MM)
         self.rows[0]["ent_text"].focus_set()
@@ -176,12 +212,21 @@ class Main(ttk.Frame, Window):
 
     # --- the lines ----------------------------------------------------------
 
-    def add_row(self, height_mm):
+    def get_word(self, pairs, code):
+        """The word on screen for a stored code, from KINDS or ALIGNS."""
+        word = pairs[0][1]
+        for stored, english in pairs:
+            if stored == code:
+                word = english
+        return _(word)
+
+    def add_row(self, height_mm, kind_code="TEXT", content="",
+                align_code="C"):
         """A new line at the bottom: type, text, height, alignment."""
-        kind = tk.StringVar(value=_(KINDS[0][1]))
-        text = tk.StringVar()
+        kind = tk.StringVar(value=self.get_word(KINDS, kind_code))
+        text = tk.StringVar(value=content)
         height = tk.StringVar(value=str(height_mm))
-        align = tk.StringVar(value=_(ALIGNS[1][1]))
+        align = tk.StringVar(value=self.get_word(ALIGNS, align_code))
 
         cb_kind = ttk.Combobox(self.frm_lines, textvariable=kind,
                                state="readonly", width=16,
@@ -459,3 +504,105 @@ class Main(ttk.Frame, Window):
                 self.fit.set(_("Label NOT printed: the printer is not "
                                "set up."))
             self.copies.set(str(self.engine.printer.COPIES_MIN))
+
+    # --- templates ----------------------------------------------------------
+
+    def set_templates(self, template_id=None):
+        """Fill the combo box, and show template_id in it if given."""
+        rows = self.engine.templates.get_all()
+        self.template_ids = {}
+        captions = []
+        for position, row in enumerate(rows):
+            self.template_ids[position] = row["template_id"]
+            captions.append(row["description"])
+        self.engine.tools.set_combo(self.cb_template, captions)
+        self.template.set("")
+        if template_id is not None:
+            self.engine.tools.set_combo_id(self.cb_template,
+                                           self.template_ids, template_id)
+
+    def on_templates(self, row_id=None):
+        """A template was saved or deleted: the list again."""
+        self.set_templates(row_id)
+
+    def get_template_id(self):
+        """The template chosen in the combo box, or None."""
+        return self.engine.tools.get_combo_id(self.cb_template,
+                                              self.template_ids)
+
+    def on_template(self, evt=None):
+        """A template chosen: its lines replace the ones on screen.
+
+        No question first: choosing a template is the daily gesture, and
+        a question on every one would teach people to dismiss it.
+        """
+        elements = self.engine.templates.get_elements(self.get_template_id())
+        for row in list(self.rows):
+            for widget in row["widgets"]:
+                widget.destroy()
+        self.rows = []
+        for element in elements:
+            self.add_row(element["height_mm"], self.get_kind_code(element),
+                         element["content"], element["align"])
+        self.set_cursor(0)
+
+    def get_kind_code(self, element):
+        """TEXT, or the symbology of a barcode line."""
+        code = "TEXT"
+        if element["kind"] == "barcode":
+            code = element["symbology"]
+        return code
+
+    def on_save_template(self, evt=None):
+        """Save the lines as a template, under a name asked for.
+
+        The name offered is the first line, which is what the label is
+        called when somebody reads it. A name already in use is asked
+        about, with No as the default: saving over it changes that label
+        for the whole section.
+        """
+        refusal = self.get_refusal()
+        name = self.rows[0]["text"].get().strip()
+
+        if refusal:
+            messagebox.showwarning(self.engine.app_title, refusal,
+                                   parent=self.parent)
+        else:
+            name = simpledialog.askstring(self.engine.app_title,
+                                          _("Template name:"),
+                                          initialvalue=name,
+                                          parent=self.parent)
+            agreed = name is not None and name.strip() != ""
+            used = agreed and self.engine.templates.get_id(
+                name.strip()) is not None
+            if used:
+                agreed = messagebox.askyesno(
+                    self.engine.app_title,
+                    _("The template \"{0}\" exists. Replace it?").format(
+                        name.strip()),
+                    default=messagebox.NO, parent=self.parent)
+            if agreed:
+                template_id = self.engine.templates.save(
+                    name, self.label_format["format_id"],
+                    self.get_elements())
+                self.engine.events.notify("templates", template_id)
+                self.fit.set(_("Template saved."))
+
+    def on_delete_template(self, evt=None):
+        """Take the chosen template out of use, asking first.
+
+        It goes for the whole section, so the question has No as its
+        default. Its rows stay in the database.
+        """
+        template_id = self.get_template_id()
+        if template_id is None:
+            messagebox.showwarning(self.engine.app_title,
+                                   _("Choose a template first."),
+                                   parent=self.parent)
+        elif messagebox.askyesno(
+                self.engine.app_title,
+                _("Delete the template \"{0}\"?").format(self.template.get()),
+                default=messagebox.NO, parent=self.parent):
+            self.engine.templates.disable(template_id)
+            self.engine.events.notify("templates")
+            self.fit.set(_("Template deleted."))

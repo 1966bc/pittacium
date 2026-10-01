@@ -25,6 +25,7 @@ from dbms import DBMS
 from events import Events
 from layout import Layout
 from printer import Printer
+from templates import Templates
 from tools import Tools
 from version import APP_NAME
 from version import SCHEMA_VERSION
@@ -56,6 +57,8 @@ class Engine:
         self.tools = Tools()
         # The label printer of this workstation, from the settings.
         self.printer = self.get_printer()
+        # The templates, saved in the database for the whole section.
+        self.templates = Templates(self.db, log)
         # Who changed what, told to the windows that show it: the Observer.
         self.events = Events(log)
         # The open windows, one per name: the Singleton pattern, by name.
@@ -64,8 +67,8 @@ class Engine:
         self.app_title = APP_NAME
 
     def __str__(self):
-        return ("class: {0}\nparts: log, config, db, printer, tools, events, "
-                "windows").format(self.__class__.__name__)
+        return ("class: {0}\nparts: log, config, db, printer, templates, "
+                "tools, events, windows").format(self.__class__.__name__)
 
     # --- the files ----------------------------------------------------------
 

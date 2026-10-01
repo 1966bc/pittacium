@@ -41,6 +41,31 @@ TRANSLATIONS = {
     "Interleaved 2 of 5": {"it": "Interleaved 2 of 5"},
     "Code 128": {"it": "Code 128"},
 
+    # -- help ----------------------------------------------------------------
+    "Help": {"it": "Aiuto"},
+    "About": {"it": "Informazioni"},
+    "Licence": {"it": "Licenza"},
+    "About {0}": {"it": "Informazioni su {0}"},
+    "Clear, uniform labels for the laboratory bench.":
+        {"it": "Etichette chiare e uniformi per il banco di laboratorio."},
+    "Version:": {"it": "Versione:"},
+    "Author:": {"it": "Autore:"},
+    "Licence:": {"it": "Licenza:"},
+    "Database:": {"it": "Database:"},
+    "Source:": {"it": "Sorgenti:"},
+
+    # -- templates -----------------------------------------------------------
+    "Template": {"it": "Modello"},
+    "Save template": {"it": "Salva modello"},
+    "Delete template": {"it": "Elimina modello"},
+    "Template name:": {"it": "Nome del modello:"},
+    "The template \"{0}\" exists. Replace it?":
+        {"it": "Il modello \"{0}\" esiste già. Sostituirlo?"},
+    "Template saved.": {"it": "Modello salvato."},
+    "Choose a template first.": {"it": "Scegli prima un modello."},
+    "Delete the template \"{0}\"?": {"it": "Eliminare il modello \"{0}\"?"},
+    "Template deleted.": {"it": "Modello eliminato."},
+
     # -- barcodes ------------------------------------------------------------
     "Nothing to encode.": {"it": "Niente da codificare."},
     "Interleaved 2 of 5 takes digits only.":

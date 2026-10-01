@@ -49,7 +49,8 @@ CREATE TABLE templates (
 );
 
 -- The lines of a template, from the top: text or a barcode. A barcode
--- names its symbology; a text line does not.
+-- names its symbology; a text line does not. The width of the bars is not
+-- stored: Layout chooses the widest that fit, for the data printed.
 CREATE TABLE template_elements (
     template_element_id INTEGER PRIMARY KEY,
     template_id     INTEGER NOT NULL REFERENCES templates (template_id),
@@ -59,13 +60,11 @@ CREATE TABLE template_elements (
     content         TEXT NOT NULL DEFAULT '',
     height_mm       REAL NOT NULL CHECK (height_mm > 0),
     align           TEXT NOT NULL DEFAULT 'L' CHECK (align IN ('L', 'C', 'R')),
-    module_mm       REAL CHECK (module_mm > 0),
     human_readable  INTEGER NOT NULL DEFAULT 1
                     CHECK (human_readable IN (0, 1)),
     enable          INTEGER NOT NULL DEFAULT 1 CHECK (enable IN (0, 1)),
-    CHECK ((kind = 'text' AND symbology_id IS NULL AND module_mm IS NULL)
-        OR (kind = 'barcode' AND symbology_id IS NOT NULL
-            AND module_mm IS NOT NULL))
+    CHECK ((kind = 'text' AND symbology_id IS NULL)
+        OR (kind = 'barcode' AND symbology_id IS NOT NULL))
 );
 
 CREATE INDEX ix_templates_format ON templates (format_id);

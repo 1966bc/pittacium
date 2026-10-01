@@ -215,6 +215,23 @@ class DBMS:
             cur.close()
         return count
 
+    def get_cursor(self):
+        """A cursor for a unit of work made of dependent statements.
+
+        write_many covers statements that are independent. A template is
+        not that case: its lines need the id the template's insert made.
+        The caller drives the cursor and ends the transaction with
+        commit() or rollback() - all of it, or none of it.
+        """
+        self.check_connection()
+        return self.con.cursor()
+
+    def commit(self):
+        self.con.commit()
+
+    def rollback(self):
+        self.con.rollback()
+
     # --- statements built from the schema -----------------------------------
 
     def check_identifier(self, name, kind="table"):

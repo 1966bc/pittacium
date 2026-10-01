@@ -47,11 +47,11 @@ class TestDBMS(unittest.TestCase):
                           "enable": 1})
         return self.db.write(sql, args)
 
-    def get_element(self, template_id, kind, symbology_id, module_mm):
+    def get_element(self, template_id, kind, symbology_id):
         return {"template_id": template_id, "symbology_id": symbology_id,
                 "position": 1, "kind": kind, "content": "0123456789",
-                "height_mm": 8.0, "align": "C", "module_mm": module_mm,
-                "human_readable": 1, "enable": 1}
+                "height_mm": 8.0, "align": "C", "human_readable": 1,
+                "enable": 1}
 
     def test_new_database_has_the_program_schema_version(self):
         self.db.check_schema_version(SCHEMA_VERSION)
@@ -71,20 +71,20 @@ class TestDBMS(unittest.TestCase):
 
     def test_a_barcode_element_is_stored(self):
         template_id = self.add_template()
-        values = self.get_element(template_id, "barcode", 1, 0.25)
+        values = self.get_element(template_id, "barcode", 1)
         sql, args = self.db.get_insert("template_elements", values)
         self.assertIsNotNone(self.db.write(sql, args))
 
     def test_a_barcode_without_symbology_is_refused(self):
         template_id = self.add_template()
-        values = self.get_element(template_id, "barcode", None, 0.25)
+        values = self.get_element(template_id, "barcode", None)
         sql, args = self.db.get_insert("template_elements", values)
         with self.assertRaises(sqlite3.IntegrityError):
             self.db.write(sql, args)
 
     def test_a_text_line_with_a_symbology_is_refused(self):
         template_id = self.add_template()
-        values = self.get_element(template_id, "text", 1, None)
+        values = self.get_element(template_id, "text", 1)
         sql, args = self.db.get_insert("template_elements", values)
         with self.assertRaises(sqlite3.IntegrityError):
             self.db.write(sql, args)
