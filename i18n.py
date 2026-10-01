@@ -61,6 +61,7 @@ TRANSLATIONS = {
     "Right": {"it": "Destra"},
     "Add line": {"it": "Aggiungi riga"},
     "Remove line": {"it": "Togli riga"},
+    "Remove the line \"{0}\"?": {"it": "Togliere la riga \"{0}\"?"},
     "The lines fit.": {"it": "Le righe entrano."},
     "At most {0} lines on this label.":
         {"it": "Al massimo {0} righe su questa etichetta."},

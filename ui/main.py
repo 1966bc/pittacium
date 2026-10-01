@@ -56,6 +56,8 @@ class Main(ttk.Frame, Window):
         self.fit = tk.StringVar()
         #: One dictionary per line: its variables and its widgets.
         self.rows = []
+        #: The line the cursor was last in.
+        self.current = None
         self.label_format = self.engine.get_formats()[0]
         self.layout = self.engine.get_layout(self.label_format)
         self.init_menu()
@@ -176,7 +178,6 @@ class Main(ttk.Frame, Window):
 
     def add_row(self, height_mm):
         """A new line at the bottom: type, text, height, alignment."""
-        line = len(self.rows) + 1
         kind = tk.StringVar(value=_(KINDS[0][1]))
         text = tk.StringVar()
         height = tk.StringVar(value=str(height_mm))
@@ -193,40 +194,54 @@ class Main(ttk.Frame, Window):
         cb_align = ttk.Combobox(self.frm_lines, textvariable=align,
                                 state="readonly", width=8,
                                 values=[_(word) for code, word in ALIGNS])
-        cb_kind.grid(row=line, column=0, padx=2, pady=2)
-        ent_text.grid(row=line, column=1, sticky=tk.EW, padx=2, pady=2)
-        spn_height.grid(row=line, column=2, padx=2, pady=2)
-        cb_align.grid(row=line, column=3, padx=2, pady=2)
+        row = {"kind": kind, "text": text, "height": height, "align": align,
+               "widgets": (cb_kind, ent_text, spn_height, cb_align),
+               "ent_text": ent_text}
+        self.rows.append(row)
+        self.set_grid()
 
         for variable in (text, height, align):
             variable.trace_add("write", self.on_change)
-        kind.trace_add("write", lambda *args: self.on_kind(line - 1))
+        kind.trace_add("write", lambda *args: self.on_kind(row))
+
+        # The line somebody is on is the one Remove line takes away.
+        for widget in row["widgets"]:
+            widget.bind("<FocusIn>", lambda evt: self.set_current(row),
+                        add="+")
 
         # The keys of a text editor: Return goes to the next line, making
         # it when there is none; the arrows move between lines; BackSpace
-        # on an empty last line takes it away. Lines are only ever added
-        # and removed at the bottom, so a line's index does not change.
-        index = len(self.rows)
-        ent_text.bind("<Return>", lambda evt: self.on_next(index))
-        ent_text.bind("<KP_Enter>", lambda evt: self.on_next(index))
-        ent_text.bind("<Down>", lambda evt: self.on_move(index + 1))
-        ent_text.bind("<Up>", lambda evt: self.on_move(index - 1))
-        ent_text.bind("<BackSpace>", lambda evt: self.on_backspace(index))
+        # on an empty line takes it away. A line can be removed from the
+        # middle, so the bindings carry the line itself and ask where it
+        # is now, rather than remembering where it was.
+        ent_text.bind("<Return>", lambda evt: self.on_next(row))
+        ent_text.bind("<KP_Enter>", lambda evt: self.on_next(row))
+        ent_text.bind("<Down>", lambda evt: self.on_step(row, 1))
+        ent_text.bind("<Up>", lambda evt: self.on_step(row, -1))
+        ent_text.bind("<BackSpace>", lambda evt: self.on_backspace(row))
 
-        self.rows.append({"kind": kind, "text": text, "height": height,
-                          "align": align,
-                          "widgets": (cb_kind, ent_text, spn_height,
-                                      cb_align),
-                          "ent_text": ent_text})
+        self.set_current(row)
         self.set_preview()
 
-    def on_kind(self, index):
+    def set_grid(self):
+        """Every line in its place, from the top: after a removal too."""
+        for index, row in enumerate(self.rows):
+            for column, widget in enumerate(row["widgets"]):
+                sticky = ""
+                if column == 1:
+                    sticky = tk.EW
+                widget.grid(row=index + 1, column=column, sticky=sticky,
+                            padx=2, pady=2)
+
+    def set_current(self, row):
+        self.current = row
+
+    def on_kind(self, row):
         """A line changed type: a barcode wants taller bars than text.
 
         The height changes only when it is still the default of the other
         type, so a height somebody chose is not thrown away.
         """
-        row = self.rows[index]
         code = self.get_kind(row["kind"].get())
         if code == "TEXT" and row["height"].get() == str(BARCODE_HEIGHT_MM):
             row["height"].set(str(NEXT_HEIGHT_MM))
@@ -235,34 +250,36 @@ class Main(ttk.Frame, Window):
             row["height"].set(str(BARCODE_HEIGHT_MM))
         self.set_preview()
 
-    def on_next(self, index):
+    def on_next(self, row):
         """Return: the line below, a new one if this is the last."""
+        index = self.rows.index(row)
         if index + 1 < len(self.rows):
-            self.on_move(index + 1)
+            self.set_cursor(index + 1)
         else:
             self.on_add()
         return "break"
 
-    def on_move(self, index):
-        """The cursor to the text of another line, if there is one."""
+    def on_step(self, row, step):
+        """An arrow: the line above or below, if there is one."""
+        self.set_cursor(self.rows.index(row) + step)
+        return "break"
+
+    def set_cursor(self, index):
+        """The cursor to the end of a line's text, if the line exists."""
         if 0 <= index < len(self.rows):
             entry = self.rows[index]["ent_text"]
             entry.focus_set()
             entry.icursor(tk.END)
-        return "break"
 
-    def on_backspace(self, index):
-        """BackSpace on the empty last line removes it, like a line break.
+    def on_backspace(self, row):
+        """BackSpace on an empty line removes it, like a line break.
 
         Anywhere else BackSpace deletes a character as always: returning
-        None lets the entry do it.
+        None lets the entry do it. The first line stays.
         """
         handled = None
-        last = index == len(self.rows) - 1
-        empty = self.rows[index]["text"].get() == ""
-        if last and empty and index > 0:
-            self.on_remove()
-            self.on_move(index - 1)
+        if row["text"].get() == "" and len(self.rows) > 1:
+            self.remove_row(row)
             handled = "break"
         return handled
 
@@ -280,12 +297,36 @@ class Main(ttk.Frame, Window):
             self.fit.set(_("At most {0} lines on this label.").format(limit))
 
     def on_remove(self, evt=None):
-        """Take away the last line; the first one always stays."""
+        """Take away the line the cursor is on; one line always stays.
+
+        A line with text is asked about first, with No as the default:
+        removing one is rare, so the question does not become a reflex,
+        and what it would throw away is something somebody typed. An empty
+        line goes without a word - there is nothing to lose.
+        """
         if len(self.rows) > 1:
-            row = self.rows.pop()
-            for widget in row["widgets"]:
-                widget.destroy()
-            self.set_preview()
+            row = self.rows[-1]
+            if self.current in self.rows:
+                row = self.current
+            text = row["text"].get().strip()
+            agreed = True
+            if text != "":
+                agreed = messagebox.askyesno(
+                    self.engine.app_title,
+                    _("Remove the line \"{0}\"?").format(text),
+                    default=messagebox.NO, parent=self.parent)
+            if agreed:
+                self.remove_row(row)
+
+    def remove_row(self, row):
+        """A line out, the others closed up, the cursor on the one above."""
+        index = self.rows.index(row)
+        self.rows.remove(row)
+        for widget in row["widgets"]:
+            widget.destroy()
+        self.set_grid()
+        self.set_cursor(max(0, index - 1))
+        self.set_preview()
 
     def on_change(self, *args):
         self.set_preview()

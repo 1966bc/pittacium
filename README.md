@@ -6,6 +6,8 @@ their necks, saying what was inside.
 
 **Clear, uniform labels for the laboratory bench: bottles, boxes, tubes.**
 
+![A 50 x 30 mm label in pittacium's preview: DON'T PANIC, 42 in Interleaved 2 of 5](label.png)
+
 A small desktop application to print text labels on the laboratory label
 printer, without opening Inventarium. Python, Tkinter, SQLite, standard
 library only.
