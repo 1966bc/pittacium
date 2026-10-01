@@ -47,6 +47,20 @@ at how the Zebra is connected - a `USB001` port or a TCP/IP port with an
 address. It decides the transport now, and whether a web version is
 possible later.
 
+If it has an address, check that the printer answers on its raw port
+before blaming the program:
+
+```
+Test-NetConnection -ComputerName <printer address> -Port 9100
+```
+
+`TcpTestSucceeded : True` means a job sent there arrives. 9100 is the
+Zebra default; the printer's own configuration label (hold the feed
+button) says which port it really listens on. A different one goes in
+Settings > Port (tcp). Try it from the PC first, and later from the
+hospital's internal web server: whether that server reaches the printer
+is what a web version depends on.
+
 **3. Set the transport and print the test label.**
 
 - `raw`: the queue name exactly as listed. Needs pywin32:
