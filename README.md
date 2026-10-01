@@ -29,8 +29,13 @@ write "PBS 1X" on a bottle.
   each with its size in millimetres.
 - The number of lines on a label is variable, within what the format can
   hold.
+- A line is either **text or a barcode**.
+- **Every label carries the name of the section** in a band at the
+  bottom — Corelab, Spettrometria di Massa, Ematologia — chosen from a
+  list, never typed, so it is spelt the same way on every label.
 - **Shows the label on screen** as it is typed, so a line that does not
-  fit is seen before a label is wasted.
+  fit is seen before a label is wasted. Linear barcodes are drawn bar by
+  bar; Data Matrix and QR as a box of the right size.
 - Keeps **templates** of the labels printed most often, the same for
   everybody.
 
@@ -42,18 +47,29 @@ write "PBS 1X" on a bottle.
   handwritten one would — a tube brought in for research may well have a
   name on it — and none of it stays behind: not in the database, not in
   the log. Only the templates someone chooses to save are kept.
-- It is not a sample-identification system: no barcodes tied to a
-  record, no link to the laboratory information system.
+- It is not a sample-identification system: it prints the barcode it is
+  given, tied to no record, with no link to the laboratory information
+  system.
 
 ## Design decisions
 
 - **Formats are in millimetres**, and know nothing about the printer. A
   new printer, or a different resolution, does not invalidate them.
-- **The printer is data, not code**: resolution, media, sensor, darkness,
-  speed, queue. Replacing it is a change of configuration.
-- **One class speaks the printer's language.** Today that is ZPL II for a
-  Zebra; no other part of the program writes a printer command. Another
-  make of printer would mean one more class, written the day it arrives.
+- **The printer is data, not code**: a profile with its language,
+  resolution, head width, and the options of that language. Replacing it
+  is a change of configuration.
+- **Meant for similar label printers, not only one.** Each printer
+  language has one class that turns the layout into commands; no other
+  part of the program writes a printer command. ZPL II is implemented,
+  which also covers printers with a ZPL emulation. TSPL or EPL are added
+  the day there is a printer to test them on: a class nobody has seen
+  print is not support. Printers that only take a driver (Brother QL,
+  Dymo) are out of scope.
+- **Barcodes are drawn by the printer**, at its own resolution:
+  Interleaved 2 of 5 and Code 128 first, then Code 39, Codabar, Data
+  Matrix, QR. The data is checked against the symbology before printing,
+  and a symbol that does not fit the label at a readable bar width is
+  refused, not squeezed.
 - **One layout, two renderers.** `Layout` computes once where every line
   goes and how tall it is, in printer dots. `Zpl` turns it into commands,
   `Preview` draws it on a Tk canvas. The positions are written in one
@@ -79,12 +95,11 @@ laboratory printer.
 | Laboratory | Windows 10 LTSC 2019, Python 3.7.0, SQLite 3.21.0 |
 | Development | Debian 12, Python 3.11, SQLite 3.40 |
 | Printer (2026) | Zebra GX430T, 300 dpi, thermal transfer, gap sensor |
+| Label stock | 50 x 30 mm, the roll first_sign and Inventarium print on |
 | Dependencies | none required; `pywin32` only for the `raw` transport on Windows |
 
 ## Open questions
 
-- The label stock in use, and whether the roll is changed for different
-  containers.
 - Where the database lives so that templates are shared: a network folder
   means one writer at a time.
 
