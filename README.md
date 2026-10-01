@@ -1,5 +1,12 @@
 # pittacium
 
+[![Python 3.7+](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
+[![Tkinter](https://img.shields.io/badge/tkinter-green.svg)](https://docs.python.org/3/library/tk.html)
+[![SQLite](https://img.shields.io/badge/sqlite-%2307405e.svg)](https://www.sqlite.org/index.html)
+[![ZPL II](https://img.shields.io/badge/ZPL-II-black.svg)](https://en.wikipedia.org/wiki/Zebra_Programming_Language)
+[![Standard library](https://img.shields.io/badge/dependencies-standard%20library-brightgreen.svg)](#target-environment)
+[![Licence GPL v3](https://img.shields.io/badge/licence-GPL--3.0-orange.svg)](LICENSE)
+
 *pittacium, -i* (Latin, from Greek *pittakion*): a label, a tag. Petronius
 describes the wine jars at Trimalchio's dinner with *pittacia* tied to
 their necks, saying what was inside.
@@ -26,6 +33,8 @@ out on its own, for people who have no reason to open an inventory to
 write "PBS 1X" on a bottle.
 
 ## What it does
+
+![The main window: the label on top, a template chosen, the lines under it](screenshot.png)
 
 - Prints text labels in a few **formats**, one per kind of container,
   each with its size in millimetres.
