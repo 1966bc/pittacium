@@ -15,9 +15,8 @@ their necks, saying what was inside.
 
 ![A 50 x 30 mm label in pittacium's preview: DON'T PANIC, 42 in Interleaved 2 of 5](label.png)
 
-A small desktop application to print text labels on the laboratory label
-printer, without opening Inventarium. Python, Tkinter, SQLite, standard
-library only.
+A small desktop application to print text and barcode labels on the
+laboratory label printer. Python, Tkinter, SQLite, standard library only.
 
 ## Why
 
@@ -25,12 +24,11 @@ Labels on the bench are still written by hand, and everybody writes them
 their own way. A pittacium label is the fair copy of a handwritten one:
 whatever would have been written by hand, printed legibly and the same
 for everyone. The same kind of container carries the same information,
-in the same order, in the same place. Colleagues asked for it; the printer is already there
-and well liked.
+in the same order, in the same place. Colleagues asked for it; the
+printer is already there and well liked.
 
-Inventarium already has a custom-label window. pittacium takes that idea
-out on its own, for people who have no reason to open an inventory to
-write "PBS 1X" on a bottle.
+It is a program of its own, small on purpose: it opens at once, for
+whoever needs to write "PBS 1X" on a bottle and nothing else.
 
 ## What it does
 
@@ -54,7 +52,7 @@ write "PBS 1X" on a bottle.
 
 ## What it does not do
 
-- It is not an inventory: no stock, no lots, no expiry tracking. 
+- It is not an inventory: no stock, no lots, no expiry tracking.
 - It does not remember what it printed. A label may carry anything a
   handwritten one would — a tube brought in for research may well have a
   name on it — and none of it stays behind: not in the database, not in
@@ -97,9 +95,6 @@ write "PBS 1X" on a bottle.
   9100, `file` for testing, which writes the ZPL and says loudly that
   nothing was printed. Every attempt goes to the log.
 
-The printing approach comes from first_sign, where it already runs on the
-laboratory printer.
-
 - **One installation per section.** Each section has its own copy, its
   own database and its own templates, shared by whoever works there; no
   two workstations write to the same file over the network.
@@ -111,7 +106,7 @@ laboratory printer.
 | Laboratory | Windows 10 LTSC 2019, Python 3.7.0, SQLite 3.21.0 |
 | Development | Debian 12, Python 3.11, SQLite 3.40 |
 | Printer (2026) | Zebra GX430T, 300 dpi, thermal transfer, gap sensor |
-| Label stock | 50 x 30 mm, the roll first_sign and Inventarium print on |
+| Label stock | 50 x 30 mm |
 | Dependencies | none required; `pywin32` only for the `raw` transport on Windows |
 
 ## Running
@@ -137,9 +132,7 @@ somewhere else to install it: the next build rewrites `dist/`.
 
 ## Conventions
 
-The general rules are in
-[fundamenta/python.md](https://github.com/1966bc/fundamenta); what is
-particular to this project is in [CONVENTIONS.md](CONVENTIONS.md).
+How the code is written, and why: [CONVENTIONS.md](CONVENTIONS.md).
 
 ## Licence
 
