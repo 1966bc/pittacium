@@ -102,7 +102,7 @@ class Layout:
         return body - used
 
     def get_overflow_mm(self, elements):
-        """By how much the lines are too tall, in millimetres; 0 if they fit."""
+        """How much too tall the lines are, in millimetres; 0 if they fit."""
         free = self.get_free(self.get_lines(elements))
         overflow = 0.0
         if free < 0:

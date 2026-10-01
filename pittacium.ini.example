@@ -19,8 +19,29 @@ theme = clam
 section = Lab
 
 [printer]
+; the printer's language: zpl (Zebra, and printers that emulate it)
+language = zpl
 ; dots per inch: 300 on a Zebra GX430T, 203 on a GX420T
 dpi = 300
+; T thermal transfer (with ribbon), D direct thermal
+media = T
+; Y gap between labels, N continuous, M black mark
+tracking = Y
+; darkness, from -30 to 30
+darkness = 0
+; speed, inches per second
+speed = 2
+
+[transport]
+; file = DOES NOT PRINT, writes the job to the zpl folder, for testing
+; raw  = the system's print queue
+; tcp  = straight to the printer on port 9100
+kind = file
+; the print queue for raw; empty is the system default
+queue =
+; the printer's address and port for tcp
+host =
+port = 9100
 
 [database]
 ; a bare name is beside the program; an absolute path can point to a

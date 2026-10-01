@@ -40,15 +40,19 @@ class Preview(tk.Canvas):
     WRONG = "#d03030"
 
     def __init__(self, parent, layout):
+        super().__init__(parent, background=self.TABLE,
+                         highlightthickness=0)
+        self.set_layout(layout)
+        self.family = self.get_family()
+
+    def set_layout(self, layout):
+        """Scale to a layout: the label is always LABEL_PX wide on screen."""
         width_dots, height_dots = layout.get_size()
         self.scale = float(self.LABEL_PX) / width_dots
         self.label_width = self.LABEL_PX
         self.label_height = int(height_dots * self.scale)
-        super().__init__(parent,
-                         width=self.label_width + 2 * self.PAD_PX,
-                         height=self.label_height + 2 * self.PAD_PX,
-                         background=self.TABLE, highlightthickness=0)
-        self.family = self.get_family()
+        self.configure(width=self.label_width + 2 * self.PAD_PX,
+                       height=self.label_height + 2 * self.PAD_PX)
 
     def get_family(self):
         """The first of FAMILIES this machine has."""

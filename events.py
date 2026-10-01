@@ -27,7 +27,7 @@ class Events:
     #: The events that exist, one per table a window shows. A name not in
     #: this list is a typo, and it is refused where it is written rather
     #: than being an event nobody ever hears.
-    NAMES = ("formats", "templates")
+    NAMES = ("formats", "settings", "templates")
 
     def __init__(self, log):
         #: The log, for the trace (--trace).

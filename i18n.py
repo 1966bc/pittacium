@@ -49,6 +49,55 @@ TRANSLATIONS = {
         {"it": "Al massimo {0} righe su questa etichetta."},
     "Too tall by {0:.1f} mm": {"it": "Troppo alta di {0:.1f} mm"},
     "Height from {0} to {1} mm": {"it": "Altezza da {0} a {1} mm"},
+
+    # -- printing ------------------------------------------------------------
+    "Print": {"it": "Stampa"},
+    "Copies": {"it": "Copie"},
+    "Copies from {0} to {1}": {"it": "Copie da {0} a {1}"},
+    "Nothing to print: every line is empty.":
+        {"it": "Niente da stampare: tutte le righe sono vuote."},
+    "Labels printed: {0}": {"it": "Etichette stampate: {0}"},
+    "Label NOT printed: the printer is not set up.":
+        {"it": "Etichetta NON stampata: la stampante non è configurata."},
+    "Printer not set up: labels do NOT come out. See File > Settings.":
+        {"it": "Stampante non configurata: le etichette NON escono. "
+               "Vedi File > Impostazioni."},
+    "NOT PRINTED, written to {0}": {"it": "NON STAMPATA, scritta in {0}"},
+
+    # -- settings ------------------------------------------------------------
+    "Settings...": {"it": "Impostazioni..."},
+    "Settings": {"it": "Impostazioni"},
+    "Label": {"it": "Etichetta"},
+    "Interface": {"it": "Interfaccia"},
+    "Printer": {"it": "Stampante"},
+    "Transport": {"it": "Trasporto"},
+    "Section": {"it": "Sezione"},
+    "Language": {"it": "Lingua"},
+    "Resolution (dpi)": {"it": "Risoluzione (dpi)"},
+    "Media": {"it": "Supporto"},
+    "Sensor": {"it": "Sensore"},
+    "Darkness (-30 to 30)": {"it": "Contrasto (da -30 a 30)"},
+    "Speed (inches/s)": {"it": "Velocità (pollici/s)"},
+    "Print queue (raw)": {"it": "Coda di stampa (raw)"},
+    "Address (tcp)": {"it": "Indirizzo (tcp)"},
+    "Port (tcp)": {"it": "Porta (tcp)"},
+    "Save": {"it": "Salva"},
+    "Test label": {"it": "Etichetta di prova"},
+    "Print queues": {"it": "Code di stampa"},
+    "Close": {"it": "Chiudi"},
+    "Test label sent to {0}": {"it": "Etichetta di prova inviata a {0}"},
+    "No print queue on this machine.":
+        {"it": "Nessuna coda di stampa su questo computer."},
+    ("Media: T thermal transfer, D direct thermal. "
+     "Sensor: Y gap, N continuous, M black mark.\n"
+     "Transport: file does NOT print, raw uses the print queue, "
+     "tcp goes to the printer on port 9100.\n"
+     "The language changes at the next start."):
+        {"it": ("Supporto: T trasferimento termico, D termico diretto. "
+                "Sensore: Y gap, N continuo, M tacca nera.\n"
+                "Trasporto: file NON stampa, raw usa la coda di stampa, "
+                "tcp va alla stampante sulla porta 9100.\n"
+                "La lingua cambia al prossimo avvio.")},
 }
 
 

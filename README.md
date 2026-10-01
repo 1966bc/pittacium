@@ -90,6 +90,10 @@ write "PBS 1X" on a bottle.
 The printing approach comes from first_sign, where it already runs on the
 laboratory printer.
 
+- **One installation per section.** Each section has its own copy, its
+  own database and its own templates, shared by whoever works there; no
+  two workstations write to the same file over the network.
+
 ## Target environment
 
 | | |
@@ -110,11 +114,6 @@ python3 -m unittest discover -s tests -v
 
 The first start makes `pittacium.ini` from `pittacium.ini.example` and the
 database from `sql/`. On Debian, tkinter needs the `python3-tk` package.
-
-## Open questions
-
-- Where the database lives so that templates are shared: a network folder
-  means one writer at a time.
 
 ## Conventions
 

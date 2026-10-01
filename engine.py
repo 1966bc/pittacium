@@ -24,6 +24,7 @@ from config import Config
 from dbms import DBMS
 from events import Events
 from layout import Layout
+from printer import Printer
 from tools import Tools
 from version import APP_NAME
 from version import SCHEMA_VERSION
@@ -53,6 +54,8 @@ class Engine:
         self.set_database()
         # Styles and widget helpers.
         self.tools = Tools()
+        # The label printer of this workstation, from the settings.
+        self.printer = self.get_printer()
         # Who changed what, told to the windows that show it: the Observer.
         self.events = Events(log)
         # The open windows, one per name: the Singleton pattern, by name.
@@ -61,7 +64,7 @@ class Engine:
         self.app_title = APP_NAME
 
     def __str__(self):
-        return ("class: {0}\nparts: log, config, db, tools, events, "
+        return ("class: {0}\nparts: log, config, db, printer, tools, events, "
                 "windows").format(self.__class__.__name__)
 
     # --- the files ----------------------------------------------------------
@@ -137,9 +140,52 @@ class Engine:
 
     # --- the label ----------------------------------------------------------
 
-    def get_dpi(self):
-        """The printer's resolution, from the settings of this workstation."""
-        return self.config.get_int("printer", "dpi")
+    def get_printer(self):
+        """The printer as the settings describe it now."""
+        return Printer(self.config, self.get_file(""), self.log)
+
+    def set_settings(self, values):
+        """Write the settings, and take them into use - or none of them.
+
+        values maps (section, key) to text. They are written, then a
+        printer is built from them; if it refuses one, every value written
+        goes back to what it was, and the refusal is raised. A settings
+        file half changed would be a printer nobody configured.
+        """
+        old = {}
+        for section, key in values:
+            old[(section, key)] = self.config.get(section, key)
+            self.config.set(section, key, values[(section, key)])
+        try:
+            printer = self.get_printer()
+        except Exception:
+            for section, key in old:
+                self.config.set(section, key, old[(section, key)])
+            raise
+        self.printer = printer
+        self.log.info("settings saved")
+        self.events.notify("settings")
+
+    def print_test(self):
+        """A test label on the first format, with the printer's settings.
+
+        It says what it was printed with, so the label in the hand can be
+        read against the settings window.
+        """
+        label_format = self.get_formats()[0]
+        layout = self.get_layout(label_format)
+        printer = self.printer
+        lines = ((APP_NAME, 5.0),
+                 ("Test", 3.5),
+                 ("{0} dpi  {1}  {2}".format(printer.dpi, printer.media,
+                                             printer.tracking), 3.0))
+        elements = []
+        for text, height in lines:
+            elements.append({"kind": "text", "content": text,
+                             "height_mm": height, "align": "C"})
+        items = layout.get_items(elements, self.get_section())
+        return printer.print_label(layout, items, 1,
+                                   label_format["description"])
 
     def get_formats(self):
         """The label formats in use, by description."""
@@ -153,7 +199,7 @@ class Engine:
         """The Layout of a format row at this printer's resolution."""
         return Layout(label_format["width_mm"], label_format["height_mm"],
                       label_format["margin_mm"],
-                      label_format["section_band_mm"], self.get_dpi())
+                      label_format["section_band_mm"], self.printer.dpi)
 
     def get_section(self):
         """The name printed at the bottom of every label.
