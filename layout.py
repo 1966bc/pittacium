@@ -22,7 +22,9 @@ width of its own letters, this class does not.
 
 A barcode is different: its width is known exactly, module by module, so
 it is placed here, with the widest bars that fit and its quiet zone, and
-its human-readable line under it.
+its human-readable line. A Code 128 carries text, and the text is read
+first, so it goes above the bars; the digits of a 2 of 5 go under them,
+where they have always been.
 
 The lines are stacked from the top with a gap between them and the stack
 is centred in the space above the section band. The band is the last
@@ -48,9 +50,14 @@ class Layout:
     #: Thickness of the rule above the band, in millimetres.
     RULE_MM = 0.25
 
-    #: The human-readable line under a barcode, and the space above it.
+    #: The human-readable line of a barcode, and the space between it and
+    #: the bars.
     HUMAN_MM = 2.5
     HUMAN_GAP_MM = 0.5
+
+    #: The symbologies whose human-readable line goes above the bars: the
+    #: ones that carry words, which are read before they are scanned.
+    HUMAN_ABOVE = ("CODE128",)
 
     #: The narrowest bar a scanner reads reliably, and the widest wanted.
     MODULE_MIN_MM = 0.17
@@ -183,16 +190,24 @@ class Layout:
         return {"kind": "text", "x": x, "y": y, "width": width,
                 "height": height, "text": text, "align": align}
 
-    def get_barcode_items(self, element, y, height):
-        """The bars, placed by their alignment, and the text under them.
+    def is_human_above(self, element):
+        """True when the barcode's text goes above its bars."""
+        return element["symbology"] in self.HUMAN_ABOVE
 
-        A barcode with a problem is an empty box of the same place and
-        height, which the preview shows in red and the printer never gets.
+    def get_barcode_items(self, element, y, height):
+        """The bars, placed by their alignment, and their text.
+
+        The text goes above the bars or under them, by the symbology; the
+        items come out from the top. A barcode with a problem is an empty
+        box of the same place and height, which the preview shows in red
+        and the printer never gets.
         """
         width = self.get_size()[0]
         margin = self.get_dots(self.margin_mm)
         bars = self.get_dots(element["height_mm"])
         data = element["content"].strip()
+        human = self.get_dots(self.HUMAN_MM)
+        human_gap = self.get_dots(self.HUMAN_GAP_MM)
         items = []
 
         if self.get_problem(element):
@@ -208,7 +223,15 @@ class Layout:
                 x = (width - symbol) // 2
             elif element["align"] == "R":
                 x = width - margin - symbol
-            barcode = {"kind": "barcode", "x": x, "y": y, "width": symbol,
+            above = element["human_readable"] and self.is_human_above(
+                element)
+            below = element["human_readable"] and not above
+            top = y
+            if above:
+                items.append(self.get_text_item(x, y, symbol, human, data,
+                                                "C"))
+                top = y + human + human_gap
+            barcode = {"kind": "barcode", "x": x, "y": top, "width": symbol,
                        "height": bars, "symbology": element["symbology"],
                        "data": data, "module": module, "modules": modules}
             # What the printer must be told to draw the very same symbol:
@@ -218,10 +241,9 @@ class Layout:
             elif element["symbology"] == "CODE128":
                 barcode["subset"] = symbology.get_subset(data)
             items.append(barcode)
-            if element["human_readable"]:
+            if below:
                 items.append(self.get_text_item(
-                    x, y + bars + self.get_dots(self.HUMAN_GAP_MM), symbol,
-                    self.get_dots(self.HUMAN_MM), data, "C"))
+                    x, top + bars + human_gap, symbol, human, data, "C"))
         return items
 
     def get_items(self, elements, section):

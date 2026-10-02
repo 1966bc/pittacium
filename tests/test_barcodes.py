@@ -99,10 +99,27 @@ class TestBarcodeOnALabel(unittest.TestCase):
         width = self.layout.get_size()[0]
         self.assertLessEqual(abs(item["x"] * 2 + item["width"] - width), 1)
 
-    def test_the_human_readable_line_is_under_the_bars(self):
-        items = self.layout.get_items([get_barcode("42", "I2OF5")], "Lab")
-        self.assertEqual(items[1]["text"], "42")
+    def test_the_text_of_a_code_128_is_above_the_bars(self):
+        items = self.layout.get_items([get_barcode("MYO DED1", "CODE128")],
+                                      "Lab")
+        self.assertEqual((items[0]["kind"], items[0]["text"]),
+                         ("text", "MYO DED1"))
+        self.assertEqual(items[1]["kind"], "barcode")
         self.assertGreater(items[1]["y"], items[0]["y"] + items[0]["height"])
+
+    def test_the_digits_of_a_2_of_5_are_under_the_bars(self):
+        items = self.layout.get_items([get_barcode("42", "I2OF5")], "Lab")
+        self.assertEqual(items[0]["kind"], "barcode")
+        self.assertEqual((items[1]["kind"], items[1]["text"]), ("text", "42"))
+        self.assertGreater(items[1]["y"], items[0]["y"] + items[0]["height"])
+
+    def test_the_bars_and_their_text_stay_inside_the_line(self):
+        for element in (get_barcode("MYO DED1", "CODE128"),
+                        get_barcode("42", "I2OF5")):
+            items = self.layout.get_items([element], "Lab")
+            bottom = items[1]["y"] + items[1]["height"]
+            self.assertEqual(bottom - items[0]["y"],
+                             self.layout.get_height(element))
 
     def test_too_long_a_barcode_is_a_problem_and_never_printed(self):
         element = get_barcode("A" * 60, "CODE128")
