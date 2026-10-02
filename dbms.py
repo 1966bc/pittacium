@@ -11,12 +11,14 @@ becomes an empty result, because an empty result reads as "there is no
 data", and that is a different statement from "the query failed".
 
 Rows are sqlite3.Row, read by name. Only what pittacium uses today is
-here: backup, restore and dump come with the first migration that needs
-them.
+here: a migration takes a copy of the file before it runs, and restoring
+it is copying it back by hand. Dump comes the day something needs it.
 """
 
+import datetime
 import os
 import re
+import shutil
 import sqlite3
 
 
@@ -53,6 +55,18 @@ class DBMS:
             raise IOError("database already exists: {0}".format(
                 self.database))
 
+        self.run_scripts(scripts)
+        self.log.info("database created: {0}".format(self.database))
+
+    def run_scripts(self, scripts):
+        """Run SQL scripts in order, on a connection of their own.
+
+        Each script carries its own BEGIN and COMMIT, and its own PRAGMAs:
+        a migration turns foreign keys off while it rebuilds a table, which
+        SQLite allows only outside a transaction - so not on self.con. A
+        script that fails leaves its transaction open, and closing the
+        connection rolls it back.
+        """
         con = sqlite3.connect(self.database)
         try:
             for path in scripts:
@@ -60,7 +74,25 @@ class DBMS:
                     con.executescript(f.read())
         finally:
             con.close()
-        self.log.info("database created: {0}".format(self.database))
+
+    def migrate(self, scripts):
+        """Bring the database to a newer schema, after copying the file.
+
+        The copy is taken with the connection closed, beside the database,
+        named after the version it holds and the moment it was taken: if a
+        migration goes wrong, putting the copy back is the way home.
+        """
+        found = self.get_schema_version()
+        self.close_connection()
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup = "{0}.v{1}.{2}.bak".format(self.database, found, stamp)
+        shutil.copyfile(self.database, backup)
+        self.log.info("database copied to {0}".format(backup))
+
+        self.run_scripts(scripts)
+        self.set_connection()
+        self.log.info("database migrated from schema version {0} to "
+                      "{1}".format(found, self.get_schema_version()))
 
     def set_connection(self):
         """Open the database and switch on what SQLite leaves off.

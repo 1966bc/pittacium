@@ -154,6 +154,7 @@ code128.py       Code 128, encoded by hand
 version.py       the facts about the program, written once
 ui/              the windows: they calculate nothing
 sql/ddl dml      the schema and the starting data
+sql/migrations   from one schema version to the next, numbered
 tests/
 ```
 
@@ -232,7 +233,12 @@ tests/
   COLUMN`, no `DROP COLUMN`, no window functions, no `RETURNING`.
 - **The schema version is `PRAGMA user_version`**, checked at every start.
   Once a database is in service its schema is changed only by a numbered
-  migration, with a copy of the file taken first.
+  migration, with a copy of the file taken first. A migration lives in
+  `sql/migrations`, is named after the version it makes
+  (`002_formats_without_section.sql` makes 2) and sets `user_version`
+  itself. A new database runs them too, after `ddl` and `dml`: there is
+  one way to the current schema, not two. `ddl/001` stays as it was
+  written: it is the history, not the present.
 - The repository carries the schema and the starting data as `.sql`,
   never a populated `.sl3`.
 

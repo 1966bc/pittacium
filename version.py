@@ -26,4 +26,4 @@ __email__ = "giuseppecostanzi@gmail.com"
 __date__ = "autumnus MMXXVI"
 __status__ = "development"
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2

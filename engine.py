@@ -131,23 +131,47 @@ class Engine:
         return path
 
     def get_scripts(self):
-        """The SQL that makes a new database: structure, then data."""
+        """The SQL that makes a new database: structure, data, migrations.
+
+        A new database goes through the same migrations as one in service,
+        so there is one way to reach the current schema, not two.
+        """
         scripts = []
         for folder in ("ddl", "dml"):
             pattern = os.path.join(self.get_resource("sql"), folder, "*.sql")
             scripts.extend(sorted(glob.glob(pattern)))
+        scripts.extend(self.get_migrations(0))
         return scripts
 
-    def set_database(self):
-        """Make the database if there is none, open it, and check it.
+    def get_migrations(self, version):
+        """The migrations past a schema version, in order.
 
-        A file of another schema version is refused here, at the start,
-        rather than failing on the first query that finds a column missing.
+        A migration is named after the version it brings the database to:
+        002_formats_without_section.sql makes version 2.
+        """
+        pattern = os.path.join(self.get_resource("sql"), "migrations",
+                               "*.sql")
+        migrations = []
+        for path in sorted(glob.glob(pattern)):
+            number = int(os.path.basename(path).split("_")[0])
+            if number > version:
+                migrations.append(path)
+        return migrations
+
+    def set_database(self):
+        """Make the database if there is none, bring it up to date, check it.
+
+        An older file is migrated, after a copy of it is taken. A newer one
+        is refused here, at the start, rather than failing on the first
+        query that finds a column it does not expect.
         """
         if not os.path.exists(self.db.database):
             self.db.create(self.get_scripts())
 
         self.db.set_connection()
+        found = self.db.get_schema_version()
+        if found < SCHEMA_VERSION:
+            self.db.migrate(self.get_migrations(found))
         self.db.check_schema_version(SCHEMA_VERSION)
         self.db.check_integrity()
 
@@ -211,11 +235,17 @@ class Engine:
                                    label_format["description"])
 
     def get_formats(self):
-        """The label formats in use, by description."""
+        """The label formats in use, in the order they were added.
+
+        By id and not by description: the first is the roll the program
+        started with, which the main window opens on and the test label is
+        printed on, and a format added later must not take its place by
+        sorting before it.
+        """
         sql = """SELECT *
                    FROM formats
                   WHERE enable = 1
-                  ORDER BY description"""
+                  ORDER BY format_id"""
         return self.db.read_all(sql)
 
     def get_layout(self, label_format):

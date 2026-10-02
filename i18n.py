@@ -35,6 +35,7 @@ TRANSLATIONS = {
     "File": {"it": "File"},
     "Exit": {"it": "Esci"},
     "Section: {0}": {"it": "Sezione: {0}"},
+    "Format": {"it": "Formato"},
     "Lines": {"it": "Righe"},
     "Type": {"it": "Tipo"},
     "Text": {"it": "Testo"},

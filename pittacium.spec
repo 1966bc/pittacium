@@ -44,6 +44,9 @@ DATAS = [# The settings every new installation starts from.
          # them at the first start, and can be made again from the folder.
          ("sql/ddl/*.sql", "sql/ddl"),
          ("sql/dml/*.sql", "sql/dml"),
+         # The migrations: a new database goes through them too, and an
+         # installation in service is brought up to date by them.
+         ("sql/migrations/*.sql", "sql/migrations"),
          # Read by the Licence window: a copy that names the GPL and hides
          # its text hands over half of what it promises.
          ("LICENSE", ".")]

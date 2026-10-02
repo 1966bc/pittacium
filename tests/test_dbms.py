@@ -20,9 +20,9 @@ from version import SCHEMA_VERSION
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def get_scripts():
+def get_scripts(folders=("ddl", "dml", "migrations")):
     scripts = []
-    for folder in ("ddl", "dml"):
+    for folder in folders:
         pattern = os.path.join(PROJECT_DIR, "sql", folder, "*.sql")
         scripts.extend(sorted(glob.glob(pattern)))
     return scripts
@@ -106,6 +106,62 @@ class TestDBMS(unittest.TestCase):
         with self.assertRaises(sqlite3.Error):
             self.db.read_all("SELECT * FROM no_such_table")
         self.assertEqual(self.log.entries[-1][0], "ERROR")
+
+    def test_a_format_may_have_no_band(self):
+        row = self.db.read_one(
+            "SELECT section_band_mm FROM formats WHERE description = ?",
+            ("40 x 10",))
+        self.assertEqual(row["section_band_mm"], 0)
+
+    def test_a_negative_band_is_still_refused(self):
+        sql, args = self.db.get_insert(
+            "formats", {"description": "x", "width_mm": 40,
+                        "height_mm": 10, "margin_mm": 1,
+                        "section_band_mm": -1, "enable": 1})
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.db.write(sql, args)
+
+
+class TestMigration(unittest.TestCase):
+    """A database of schema version 1, in service, brought up to date."""
+
+    def setUp(self):
+        self.folder = tempfile.mkdtemp()
+        self.log = MemoryLog()
+        self.db = DBMS(os.path.join(self.folder, "test.sl3"), self.log)
+        self.db.create(get_scripts(("ddl", "dml")))
+        self.db.set_connection()
+        sql, args = self.db.get_insert(
+            "templates", {"format_id": 1, "description": "PBS 1X",
+                          "enable": 1})
+        self.template_id = self.db.write(sql, args)
+        self.db.migrate(get_scripts(("migrations",)))
+
+    def tearDown(self):
+        self.db.close_connection()
+        shutil.rmtree(self.folder)
+
+    def test_it_reaches_the_program_schema_version_and_is_sound(self):
+        self.db.check_schema_version(SCHEMA_VERSION)
+        self.db.check_integrity()
+
+    def test_the_templates_still_point_at_their_format(self):
+        row = self.db.read_one(
+            """SELECT f.description
+                 FROM templates AS t
+                 JOIN formats AS f ON f.format_id = t.format_id
+                WHERE t.template_id = ?""", (self.template_id,))
+        self.assertEqual(row["description"], "50 x 30")
+
+    def test_foreign_keys_are_enforced_again(self):
+        sql, args = self.db.get_insert(
+            "templates", {"format_id": 99, "description": "x", "enable": 1})
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.db.write(sql, args)
+
+    def test_a_copy_of_the_old_file_is_taken_first(self):
+        copies = glob.glob(os.path.join(self.folder, "test.sl3.v1.*.bak"))
+        self.assertEqual(len(copies), 1)
 
 
 if __name__ == "__main__":

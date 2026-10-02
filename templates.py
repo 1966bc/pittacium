@@ -44,6 +44,14 @@ class Templates:
             template_id = row["template_id"]
         return template_id
 
+    def get_format_id(self, template_id):
+        """The format a template was saved on: its lines were fitted to it."""
+        sql = "SELECT format_id FROM templates WHERE template_id = ?"
+        row = self.db.read_one(sql, (template_id,))
+        if row is None:
+            raise ValueError("no template {0}".format(template_id))
+        return row["format_id"]
+
     def get_elements(self, template_id):
         """The lines of a template, from the top, as Layout reads them."""
         sql = """SELECT e.kind, e.content, e.height_mm, e.align,

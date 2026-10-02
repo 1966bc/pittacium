@@ -29,6 +29,8 @@ where they have always been.
 The lines are stacked from the top with a gap between them and the stack
 is centred in the space above the section band. The band is the last
 strip of the label: a thin rule, and the section's name centred under it.
+A format whose band is 0 mm has none: a label too low for one gives the
+whole of its height to its line.
 """
 
 from code128 import Code128
@@ -88,10 +90,20 @@ class Layout:
         return (height - self.get_dots(self.margin_mm)
                 - self.get_dots(self.section_band_mm))
 
+    def has_band(self):
+        """True when the format keeps a strip for the section's name."""
+        return self.get_dots(self.section_band_mm) > 0
+
     def get_body(self):
-        """Dots available to the lines, between the top margin and the band."""
-        return (self.get_band_top() - self.get_dots(self.margin_mm)
-                - self.get_dots(self.GAP_MM))
+        """Dots available to the lines, between the top margin and the band.
+
+        A gap keeps the last line off the band; with no band there is
+        nothing to keep it off, and the margin is enough.
+        """
+        body = self.get_band_top() - self.get_dots(self.margin_mm)
+        if self.has_band():
+            body -= self.get_dots(self.GAP_MM)
+        return body
 
     def get_max_lines(self, height_mm):
         """How many lines of this height fit above the band.
@@ -253,7 +265,7 @@ class Layout:
         'barcode', or 'invalid' for a barcode that cannot be printed - and
         x, y, width, height. Lines that do not fit are placed anyway,
         running into the band: the preview shows the overflow, it does
-        not hide it.
+        not hide it. A format with no band has no rule and no section.
         """
         width = self.get_size()[0]
         margin = self.get_dots(self.margin_mm)
@@ -272,13 +284,14 @@ class Layout:
                     element["align"]))
             y += height + gap
 
-        band_top = self.get_band_top()
-        band = self.get_dots(self.section_band_mm)
-        rule = max(2, self.get_dots(self.RULE_MM))
-        text_height = int(band * self.SECTION_TEXT_RATIO)
-        items.append({"kind": "rule", "x": margin, "y": band_top,
-                      "width": box, "height": rule})
-        items.append(self.get_text_item(
-            margin, band_top + rule + (band - rule - text_height) // 2, box,
-            text_height, section, "C"))
+        if self.has_band():
+            band_top = self.get_band_top()
+            band = self.get_dots(self.section_band_mm)
+            rule = max(2, self.get_dots(self.RULE_MM))
+            text_height = int(band * self.SECTION_TEXT_RATIO)
+            items.append({"kind": "rule", "x": margin, "y": band_top,
+                          "width": box, "height": rule})
+            items.append(self.get_text_item(
+                margin, band_top + rule + (band - rule - text_height) // 2,
+                box, text_height, section, "C"))
         return items

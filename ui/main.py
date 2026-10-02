@@ -61,6 +61,12 @@ class Main(ttk.Frame, Window):
         self.rows = []
         #: The line the cursor was last in.
         self.current = None
+        #: format_id -> the format row, in the order they were added.
+        self.formats = {}
+        for row in self.engine.get_formats():
+            self.formats[row["format_id"]] = row
+        #: Position in the format combo box -> format_id.
+        self.format_ids = {}
         self.label_format = self.engine.get_formats()[0]
         self.layout = self.engine.get_layout(self.label_format)
         self.init_menu()
@@ -100,10 +106,17 @@ class Main(ttk.Frame, Window):
         self.preview = Preview(frm_body, self.layout)
         self.preview.grid(row=0, column=0)
 
-        # The template chosen fills the lines: a daily label is a choice
-        # here and then Print.
+        # The format is the roll in the printer, chosen when the roll is
+        # changed. The template chosen fills the lines: a daily label is a
+        # choice here and then Print.
         frm_template = ttk.Frame(frm_body, style="App.TFrame")
         frm_template.grid(row=1, column=0, sticky=tk.EW, pady=(8, 0))
+        ttk.Label(frm_template, text=_("Format"),
+                  style="App.TLabel").pack(side=tk.LEFT)
+        self.cb_format = ttk.Combobox(frm_template, state="readonly",
+                                      width=10)
+        self.cb_format.pack(side=tk.LEFT, padx=(8, 16))
+        self.cb_format.bind("<<ComboboxSelected>>", self.on_format)
         ttk.Label(frm_template, text=_("Template"),
                   style="App.TLabel").pack(side=tk.LEFT)
         self.template = tk.StringVar()
@@ -182,6 +195,7 @@ class Main(ttk.Frame, Window):
     def on_open(self):
         self.engine.events.subscribe("settings", self.on_settings)
         self.engine.events.subscribe("templates", self.on_templates)
+        self.set_formats()
         self.set_templates()
         self.set_status()
         self.add_row(FIRST_HEIGHT_MM)
@@ -205,9 +219,43 @@ class Main(ttk.Frame, Window):
         The layout is rebuilt at the printer's resolution and the label
         drawn again with the section it now carries.
         """
+        self.set_status()
+        self.set_layout()
+
+    # --- the format ---------------------------------------------------------
+
+    def set_formats(self):
+        """Fill the format combo box and show the format in use."""
+        self.format_ids = {}
+        captions = []
+        for position, format_id in enumerate(self.formats):
+            self.format_ids[position] = format_id
+            captions.append(self.formats[format_id]["description"])
+        self.engine.tools.set_combo(self.cb_format, captions)
+        self.engine.tools.set_combo_id(self.cb_format, self.format_ids,
+                                       self.label_format["format_id"])
+
+    def set_format(self, format_id):
+        """Lay the label out on another format, if it is one in use.
+
+        A template saved on a format since withdrawn keeps the one on
+        screen: its lines are shown, and the preview says if they fit.
+        """
+        if format_id in self.formats:
+            self.label_format = self.formats[format_id]
+            self.engine.tools.set_combo_id(self.cb_format, self.format_ids,
+                                           format_id)
+            self.set_layout()
+
+    def on_format(self, evt=None):
+        """Another roll in the printer: the label is laid out on it."""
+        self.set_format(self.engine.tools.get_combo_id(self.cb_format,
+                                                       self.format_ids))
+
+    def set_layout(self):
+        """The layout of the format at the printer's resolution, drawn."""
         self.layout = self.engine.get_layout(self.label_format)
         self.preview.set_layout(self.layout)
-        self.set_status()
         self.set_preview()
 
     # --- the lines ----------------------------------------------------------
@@ -288,12 +336,35 @@ class Main(ttk.Frame, Window):
         type, so a height somebody chose is not thrown away.
         """
         code = self.get_kind(row["kind"].get())
-        if code == "TEXT" and row["height"].get() == str(BARCODE_HEIGHT_MM):
+        barcode_height = str(self.get_barcode_height(code))
+        if code == "TEXT" and row["height"].get() == barcode_height:
             row["height"].set(str(NEXT_HEIGHT_MM))
         elif code != "TEXT" and row["height"].get() in (
                 str(NEXT_HEIGHT_MM), str(FIRST_HEIGHT_MM)):
-            row["height"].set(str(BARCODE_HEIGHT_MM))
+            row["height"].set(barcode_height)
         self.set_preview()
+
+    def get_barcode_height(self, code):
+        """The bars a new barcode line gets: BARCODE_HEIGHT_MM, or less.
+
+        On a label too low for them, the tallest bars that fit alone, with
+        their text, in steps of the spinbox; Layout says what fits. For a
+        text line, the height a barcode of the first symbology would get.
+        """
+        symbology = code
+        if code == "TEXT":
+            symbology = KINDS[1][0]
+        element = {"kind": "barcode", "content": "", "align": "C",
+                   "symbology": symbology, "human_readable": True}
+        height = HEIGHT_MIN_MM
+        step = HEIGHT_MIN_MM
+        while step <= BARCODE_HEIGHT_MM:
+            element["height_mm"] = step
+            if self.layout.get_free([(element,
+                                      self.layout.get_height(element))]) >= 0:
+                height = step
+            step += HEIGHT_STEP_MM
+        return height
 
     def on_next(self, row):
         """Return: the line below, a new one if this is the last."""
@@ -536,7 +607,9 @@ class Main(ttk.Frame, Window):
         No question first: choosing a template is the daily gesture, and
         a question on every one would teach people to dismiss it.
         """
-        elements = self.engine.templates.get_elements(self.get_template_id())
+        template_id = self.get_template_id()
+        self.set_format(self.engine.templates.get_format_id(template_id))
+        elements = self.engine.templates.get_elements(template_id)
         for row in list(self.rows):
             for widget in row["widgets"]:
                 widget.destroy()

@@ -66,6 +66,24 @@ class TestLayout(unittest.TestCase):
         lines.append(get_line("one more", 2.0))
         self.assertFalse(self.layout.is_fitting(lines))
 
+    def test_a_format_with_no_band_has_no_rule_and_no_section(self):
+        layout = Layout(40, 10, 1.0, 0, 300)
+        items = layout.get_items([get_line("PBS 1X")], "Microbiologia")
+        self.assertEqual([item["kind"] for item in items], ["text"])
+
+    def test_with_no_band_the_line_has_the_whole_height(self):
+        layout = Layout(40, 10, 1.0, 0, 300)
+        height = layout.get_size()[1] - 2 * layout.get_dots(1.0)
+        self.assertEqual(layout.get_body(), height)
+
+    def test_a_code_128_and_its_text_fit_a_40_by_10_label(self):
+        layout = Layout(40, 10, 1.0, 0, 300)
+        element = {"kind": "barcode", "content": "MYO DED1",
+                   "height_mm": 4.5, "align": "C", "symbology": "CODE128",
+                   "human_readable": True}
+        self.assertTrue(layout.is_fitting([element]))
+        self.assertEqual(layout.get_problem(element), "")
+
     def test_every_line_box_is_inside_the_margins(self):
         items = self.layout.get_items([get_line("PBS 1X", align="R")],
                                       "Lab")

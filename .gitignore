@@ -6,6 +6,8 @@ __pycache__/
 # The schema ships as SQL.
 *.sl3
 *.db
+# The copy a migration takes before it runs: a database too.
+*.sl3.*.bak
 *.log
 *.log.*
 

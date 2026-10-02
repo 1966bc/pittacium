@@ -43,7 +43,11 @@ whoever needs to write "PBS 1X" on a bottle and nothing else.
   bottom — Corelab, Spettrometria di Massa, Ematologia. It is set once
   per workstation in `pittacium.ini`, never typed at print time, so it is
   spelt the same way on every label from that bench. Until it is set, the
-  band reads "Lab".
+  band reads "Lab". A format too low for the band has none: the 40 x 10
+  tube label of microbiology gives its whole height to its one line.
+- The **format** is the roll in the printer, chosen in the main window
+  when the roll is changed; a template opens on the format it was saved
+  on.
 - **Shows the label on screen** as it is typed, so a line that does not
   fit is seen before a label is wasted. Linear barcodes are drawn bar by
   bar; Data Matrix and QR as a box of the right size.
@@ -106,7 +110,7 @@ whoever needs to write "PBS 1X" on a bottle and nothing else.
 | Laboratory | Windows 10 LTSC 2019, Python 3.7.0, SQLite 3.21.0 |
 | Development | Debian 12, Python 3.11, SQLite 3.40 |
 | Printer (2026) | Zebra GX430T, 300 dpi, thermal transfer, gap sensor |
-| Label stock | 50 x 30 mm |
+| Label stock | 50 x 30 mm; 40 x 10 mm in microbiology |
 | Dependencies | none required; `pywin32` only for the `raw` transport on Windows |
 
 ## Running

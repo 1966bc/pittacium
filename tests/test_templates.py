@@ -21,7 +21,7 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def get_scripts():
     scripts = []
-    for folder in ("ddl", "dml"):
+    for folder in ("ddl", "dml", "migrations"):
         pattern = os.path.join(PROJECT_DIR, "sql", folder, "*.sql")
         scripts.extend(sorted(glob.glob(pattern)))
     return scripts
@@ -74,6 +74,10 @@ class TestTemplates(unittest.TestCase):
         self.assertEqual(self.templates.get_all(), [])
         row = self.db.get_selected("templates", "template_id", template_id)
         self.assertEqual(row["enable"], 0)
+
+    def test_a_template_remembers_its_format(self):
+        template_id = self.templates.save("Tube", 2, LINES[:1])
+        self.assertEqual(self.templates.get_format_id(template_id), 2)
 
     def test_a_template_with_no_lines_is_refused(self):
         with self.assertRaises(ValueError):
