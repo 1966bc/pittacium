@@ -1,24 +1,36 @@
 # pittacium — Handover
 
-Where this working copy stands and what the first test at the laboratory
-has to establish, in the order it should be done. A note with a date on
-it, 1 October 2026: overwrite it as things change, and delete it when it
-is spent.
+Where this working copy stands and what is still to be established at
+the laboratory. A note with a date on it, 2 October 2026: overwrite it
+as things change, and delete it when it is spent.
 
 ## Where it stands
 
-Written and tested on Debian 12 (Python 3.11, SQLite 3.40), 72 unittest
-tests green. It has **never run on Windows, on Python 3.7, on SQLite
-3.21, or on a real printer**, and **never been built** with PyInstaller.
-Everything below is about closing those gaps.
+84 unittest tests green on the laboratory's Windows 10 LTSC 2019, Python
+3.7.0 and SQLite 3.21.0. Built with PyInstaller 5.13.2; a copy of the
+build makes its settings, database and log at its first start, and
+migrates a version 1 database after copying it.
+
+Printed with the `raw` transport, over USB, on:
+
+- a Zebra GX430t, 300 dpi, thermal transfer: the test label and labels
+  with text and barcodes, on 50 x 30;
+- a Zebra ZD421, in another section, from a copy of the build.
+
+Steps 1, 2, 3 and 6 below are done; 4 and 5 are still to be checked on
+paper, and so is the 40 x 10 (see Still open).
 
 Settled and not to be reopened without a reason:
 
-- One roll, 50 x 30 mm, on a Zebra GX430T at 300 dpi, thermal transfer,
-  gap sensor. Bottle, box and tube are ways of filling the same label.
+- Two rolls: 50 x 30 mm, and 40 x 10 mm for microbiology tubes, which
+  can share a printer. The format is chosen in the main window when the
+  roll is changed.
 - One installation per section: its own folder, settings, database and
   templates.
-- The section band reads "Lab" until `[label] section` is set.
+- The section band reads "Lab" until `[label] section` is set. The
+  40 x 10 has no band: it is too low for one.
+- A Code 128 has its text above the bars; a 2 of 5 has its digits under
+  them.
 - The preview is always visible: Print prints at once, no question.
 - Nothing printed is kept; only templates saved on purpose are stored.
 - The interface is translated through `_()`; Italian is the default.
@@ -101,6 +113,16 @@ rewrites `dist\`. The first start of the copy must create `pittacium.ini`,
 
 ## Still open
 
+- **The 40 x 10 on paper.** Schema version 2 adds it; the first start of
+  a version 1 database migrates it, after a copy beside it
+  (`pittacium.sl3.v1.<date>.bak`). Not yet printed: check that the
+  printer finds the gap after the roll is changed (calibrate if not), and
+  that microbiology's scanner reads bars 4.5 mm high.
+- **A Zebra GK420d** still to be tried: ZPL, 203 dpi, direct thermal
+  (media D). Watch accented letters on an old firmware, and Code 128
+  longer than about 13 characters, which 203 dpi refuses on 50 mm.
+- **The Datamax E-4206P** of another bench speaks DPL, and its settings
+  cannot be changed: it needs a `Dpl` class. Put aside for now.
 - **Minimum line height.** 2 mm now, which allows 7 lines on 50 x 30.
   Decide on paper whether 2 mm is readable at the bench; 2.5 mm allows 6.
 - **Which symbology the laboratory's tube labels use**, if a colleague
