@@ -163,6 +163,11 @@ tests/
   work: `self.engine.templates.save(...)`.
 - **A window reaches the engine** through `ui.window.Window`, a property
   returning `self.nametowidget(".").engine`. Never a constructor argument.
+- **`tools.py` is shared.** It travels unchanged from one project to the
+  next, so it carries helpers this program does not call and comments
+  about the projects it came from. It is not trimmed here: a copy
+  pruned for one program is a copy that stops being the same. What
+  pittacium needs from it is added in a form the others could use.
 - **Dependencies point one way.** `layout.py`, `zpl.py` and the encoders
   import no `tkinter`: they can be tested without a window. `ui/` decides
   no position and does not import `sqlite3`.
